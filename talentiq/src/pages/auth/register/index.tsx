@@ -1,9 +1,29 @@
 import { Link } from "react-router-dom";
+import bgImage from "@/assets/bg.jpg";
 
 const Register = () => {
   return (
-    <div className="min-h-screen bg-[#025CB8] flex justify-center items-center p-5">
-      <div className="bg-white w-full max-w-md rounded-2xl p-8 shadow-xl">
+    <div
+      className="min-h-screen flex justify-center items-center p-5 bg-cover bg-center bg-no-repeat relative"
+      style={{
+        backgroundImage: `url(${bgImage})`,
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/50"></div>\
+
+      {/* Back Button */}
+      <Link
+        to="/"
+        className="absolute top-5 left-5 z-20 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-xl border border-white/30 hover:bg-white/30 transition-all"
+      >
+        ← Kembali
+      </Link>
+
+
+      {/* Card */}
+      <div className="relative bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl z-10">
+
         <h1 className="text-3xl font-bold text-center text-[#025CB8] mb-2">
           Buat Akun
         </h1>
@@ -16,36 +36,36 @@ const Register = () => {
           <input
             type="text"
             placeholder="Nama Lengkap"
-            className="w-full border border-[#025CB8] rounded-lg px-4 py-3"
+            className="w-full border border-[#025CB8] rounded-lg px-4 py-3 outline-none text-black placeholder:text-gray-400 focus:ring-2 focus:ring-[#025CB8]"
           />
 
           <input
             type="email"
             placeholder="Email"
-            className="w-full border border-[#025CB8] rounded-lg px-4 py-3"
+            className="w-full border border-[#025CB8] rounded-lg px-4 py-3 outline-none text-black placeholder:text-gray-400 focus:ring-2 focus:ring-[#025CB8]"
           />
 
           <input
             type="password"
             placeholder="Password"
-            className="w-full border border-[#025CB8] rounded-lg px-4 py-3"
+            className="w-full border border-[#025CB8] rounded-lg px-4 py-3 outline-none text-black placeholder:text-gray-400 focus:ring-2 focus:ring-[#025CB8]"
           />
 
           <input
             type="password"
             placeholder="Konfirmasi Password"
-            className="w-full border border-[#025CB8] rounded-lg px-4 py-3"
+            className="w-full border border-[#025CB8] rounded-lg px-4 py-3 outline-none text-black placeholder:text-gray-400 focus:ring-2 focus:ring-[#025CB8]"
           />
 
           <button
             type="submit"
-            className="w-full bg-[#025CB8] text-white py-3 rounded-lg font-semibold"
+            className="w-full bg-[#025CB8] hover:bg-[#014a94] transition text-white py-3 rounded-lg font-semibold"
           >
             Daftar
           </button>
         </form>
 
-        <p className="text-center text-gray-500 mb-8 mt-6">
+        <p className="text-center text-gray-500 mt-6">
           Sudah punya akun?
           <Link
             to="/login"

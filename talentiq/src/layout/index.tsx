@@ -1,21 +1,24 @@
-import { Suspense } from 'react';
+import { Suspense } from "react";
 
-import { ErrorBoundary } from 'react-error-boundary';
-import { Outlet } from 'react-router-dom';
+import { ErrorBoundary } from "react-error-boundary";
+import { Outlet } from "react-router-dom";
 
-import fallbackRender from './error-boundary/fallbackRender';
-import FooterComponent from './footer';
-import HeaderComponent from './header';
+import fallbackRender from "./error-boundary/fallbackRender";
+import FooterComponent from "./footer";
+import HeaderComponent from "./header";
 
 const LayoutComponent = () => {
   return (
-    <div className="w-full h-full">
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* HEADER */}
       <HeaderComponent />
-      <div className="py-20 flex flex-col min-h-[calc(100vh-200px)]">
+
+      {/* CONTENT */}
+      <main className="flex-1">
         <ErrorBoundary fallbackRender={fallbackRender}>
           <Suspense
             fallback={
-              <div className="w-full h-full flex justify-center items-center">
+              <div className="w-full h-full flex justify-center items-center py-20">
                 <span>Loading...</span>
               </div>
             }
@@ -23,7 +26,9 @@ const LayoutComponent = () => {
             <Outlet />
           </Suspense>
         </ErrorBoundary>
-      </div>
+      </main>
+
+      {/* FOOTER */}
       <FooterComponent />
     </div>
   );

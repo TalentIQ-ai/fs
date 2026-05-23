@@ -131,3 +131,4 @@ const FooterComponent = () => {
 };
 
 export default FooterComponent;
+// src/layout/footer/index.tsx

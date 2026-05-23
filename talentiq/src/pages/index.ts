@@ -2,9 +2,13 @@ import { lazy } from "react";
 
 const Home = lazy(() => import("@/pages/home"));
 
-const JalurKarir = lazy(() => import("@/pages/jalur_karir"));
+const Dashboard = lazy(() => import("@/pages/dashboard"));
 
-const AnalisisSkill = lazy(() => import("@/pages/analisis_skill"));
+const JalurKarir = lazy(() => import("@/pages/auth/roadmap-karir"));
+
+const AnalisisSkill = lazy(() => import("@/pages/auth/user-analisis-skill"));
+
+const ProfilKursus = lazy(() => import("@/pages/auth/profil"));
 
 const LowonganKerja = lazy(() => import("@/pages/lowongan_kerja"));
 
@@ -18,8 +22,10 @@ const ForgotPassword = lazy(
 
 export {
   Home,
+  Dashboard,
   JalurKarir,
   AnalisisSkill,
+  ProfilKursus,
   LowonganKerja,
   Login,
   Register,

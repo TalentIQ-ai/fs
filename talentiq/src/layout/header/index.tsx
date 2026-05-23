@@ -285,3 +285,4 @@ const HeaderComponent = () => {
 };
 
 export default HeaderComponent;
+// src/layout/header/index.tsx

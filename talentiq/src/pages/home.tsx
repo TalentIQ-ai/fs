@@ -67,7 +67,7 @@ const Home = () => {
     {
       title: "Analisis Skill",
       desc: "Pemetaan mendalam terhadap kompetensi teknis dan soft skills Anda melalui penilaian berbasis AI yang objektif.",
-      path: "/analisis-skill",
+      path: "/analisis_skill",
       img: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/7UFjhTHX6R/td3zvffq_expires_30_days.png",
     },
     {
@@ -252,3 +252,4 @@ const Home = () => {
 };
 
 export default Home;
+// src/pages/home.tsx

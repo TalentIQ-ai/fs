@@ -1,7 +1,10 @@
 // src/layout/header/index.tsx
+
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import logoheader from "@/assets/logoheader.png";
+import StarBorder from "@/components/StarBorder";
 
 const navItems = [
   { label: "Beranda", path: "/" },
@@ -14,13 +17,13 @@ const HeaderComponent = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  const isHomePage = pathname === "/";
-
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 40);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 30);
+    };
 
     window.addEventListener("scroll", handleScroll);
 
@@ -34,250 +37,233 @@ const HeaderComponent = () => {
   return (
     <>
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-center transition-all duration-500 ease-in-out">
+      <header className="fixed top-0 left-0 w-full z-50 flex justify-center px-4 sm:px-8 pt-4">
 
-        {/* CONTAINER */}
-        <div
-          className={`
-            flex items-center transition-all duration-500 ease-in-out
+        {/* OUTER GLOW */}
+        <div className="relative w-full max-w-7xl">
 
-            ${isHomePage
-              ? (
-                scrolled
-                  ? "w-[92%] mt-3 px-5 py-2 rounded-2xl bg-white/30 backdrop-blur-md shadow-xl border border-[#025CB8]"
-                  : "w-full mt-0 px-4 sm:px-8 lg:px-[50px] py-[15px] rounded-none bg-white/30 backdrop-blur-md"
-              )
-              : (
-                scrolled
-                  ? "w-[92%] mt-3 px-5 py-2 rounded-2xl bg-white shadow-xl border border-[#025CB8]"
-                  : "w-full mt-0 px-4 sm:px-8 lg:px-[50px] py-[15px] rounded-none bg-white shadow-sm"
-              )
-            }
-          `}
-        >
-          {/* LOGO */}
-          <Link
-            to="/"
-            className="mr-6 lg:mr-[80px] xl:mr-[150px] shrink-0"
+          {/* GLOW EFFECT */}
+          <div
+            className="
+              absolute inset-0
+              rounded-[28px]
+              blur-2xl
+              opacity-70
+              pointer-events-none
+            "
+            style={{
+              background:
+                "linear-gradient(90deg, #62AAEA, #025CB8, #62AAEA)",
+            }}
+          />
+
+          {/* STAR BORDER */}
+          <StarBorder
+            as="div"
+            color="#025cb8"
+            speed="2s"
+            thickness={2}
+            className="w-full rounded-[30px]"
           >
-            <img
-              src={logoheader}
-              alt="TalentIQ Logo"
+            {/* MAIN CONTAINER */}
+            <div
               className={`
-                object-contain cursor-pointer transition-all duration-500
-                ${scrolled ? "h-[20px]" : "h-[25px]"}
-              `}
-            />
-          </Link>
+                flex items-center
+                rounded-[26px]
+                transition-all duration-300
 
-          {/* DESKTOP NAV */}
-          <nav className="hidden md:flex items-center gap-4 lg:gap-6">
+                ${scrolled
+                  ? "bg-white/95 backdrop-blur-xl px-5 py-3"
+                  : "bg-white/90 backdrop-blur-xl px-6 py-4"
+                }
+              `}
+            >
+              {/* LOGO */}
+              <Link
+                to="/"
+                className="shrink-0 mr-6 lg:mr-14 flex items-center"
+              >
+                <img
+                  src={logoheader}
+                  alt="TalentIQ AI"
+                  className={`
+                    object-contain transition-all duration-300
+                    ${scrolled ? "h-[22px]" : "h-[28px]"}
+                  `}
+                />
+              </Link>
+
+              {/* DESKTOP NAV */}
+              <nav className="hidden md:flex items-center gap-2 lg:gap-3">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.path;
+
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`
+                        relative px-4 py-2 rounded-xl
+                        font-semibold transition-all duration-300
+
+                        ${isActive
+                          ? "bg-gradient-to-r from-[#025CB8] to-[#62AAEA] text-white shadow-lg"
+                          : "text-gray-600 hover:text-[#025CB8] hover:bg-[#025CB8]/5"
+                        }
+
+                        ${scrolled ? "text-sm" : "text-[15px]"}
+                      `}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              <div className="flex-1" />
+
+              {/* RIGHT ACTION */}
+              <div className="hidden md:flex items-center gap-3">
+
+                {/* ACCOUNT BUTTON */}
+                <button
+                  onClick={() => navigate("/login")}
+                  className="
+                    bg-gradient-to-r
+                    from-[#025CB8]
+                    to-[#62AAEA]
+                    hover:from-[#0147A0]
+                    hover:to-[#025CB8]
+                    text-white
+                    font-bold
+                    rounded-xl
+                    transition-all duration-300
+                    shadow-lg
+                    hover:shadow-2xl
+                    hover:-translate-y-0.5
+                  "
+                >
+                  <span
+                    className={`
+                      block
+                      ${scrolled
+                        ? "px-4 py-2 text-sm"
+                        : "px-5 py-2.5 text-sm"
+                      }
+                    `}
+                  >
+                    Akun
+                  </span>
+                </button>
+              </div>
+
+              {/* MOBILE BUTTON */}
+              <button
+                className="
+                  md:hidden
+                  w-11 h-11
+                  flex items-center justify-center
+                  rounded-xl
+                  bg-[#025CB8]/10
+                  text-[#025CB8]
+                  hover:bg-[#025CB8]/15
+                  transition-all duration-300
+                "
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-label="Toggle menu"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="w-5 h-5"
+                >
+                  {menuOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
+          </StarBorder>
+        </div>
+      </header>
+
+      {/* MOBILE MENU */}
+      <div
+        className={`
+          fixed left-0 right-0 z-40 px-4 sm:px-8
+          transition-all duration-300 ease-in-out
+
+          ${menuOpen
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 -translate-y-3 pointer-events-none"
+          }
+
+          ${scrolled ? "top-[78px]" : "top-[86px]"}
+        `}
+      >
+        <div className="max-w-7xl mx-auto bg-white/95 backdrop-blur-xl border border-gray-100 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="flex flex-col p-4 gap-2">
+
             {navItems.map((item) => {
               const isActive = pathname === item.path;
 
               return (
-                <div
+                <Link
                   key={item.path}
-                  className="flex flex-col items-center"
-                >
-                  <Link to={item.path}>
-                    <span
-                      className={`
-                        font-bold cursor-pointer transition-all duration-200 whitespace-nowrap
-
-                        ${isHomePage
-                          ? "text-white"
-                          : "text-[#025CB8]"
-                        }
-
-                        ${scrolled
-                          ? "text-sm"
-                          : "text-base lg:text-lg"
-                        }
-
-                        ${isActive
-                          ? "opacity-100"
-                          : "opacity-60 hover:opacity-100"
-                        }
-                      `}
-                    >
-                      {item.label}
-                    </span>
-                  </Link>
-
-                  {isActive && (
-                    <div
-                      className={`
-                        w-full h-0.5 mt-[1px] rounded-full
-
-                        ${isHomePage
-                          ? "bg-white"
-                          : "bg-[#025CB8]"
-                        }
-                      `}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-
-          <div className="flex-1" />
-
-          {/* AKUN BUTTON */}
-          <button
-            onClick={() => navigate("/login")}
-            className={`
-              hidden md:block rounded-[10px] transition-all duration-500
-
-              ${isHomePage
-                ? "bg-white/20 border border-white/30"
-                : "bg-white"
-              }
-
-              ${scrolled
-                ? "py-1 px-3"
-                : "py-[5px] px-[11px]"
-              }
-            `}
-            style={{
-              boxShadow: "0px 4px 4px #00000040",
-            }}
-          >
-            <span
-              className={`
-                font-bold transition-all duration-500
-
-                ${isHomePage
-                  ? "text-white"
-                  : "text-[#025CB8]"
-                }
-
-                ${scrolled
-                  ? "text-sm"
-                  : "text-base lg:text-lg"
-                }
-              `}
-            >
-              Akun
-            </span>
-          </button>
-
-          {/* MOBILE BUTTON */}
-          <button
-            className={`
-              md:hidden p-2 rounded-lg
-
-              ${isHomePage
-                ? "text-white"
-                : "text-[#025CB8]"
-              }
-            `}
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="w-6 h-6"
-            >
-              {menuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      {/* MOBILE DROPDOWN */}
-      <div
-        className={`
-          fixed z-40 left-0 right-0 overflow-hidden
-          transition-all duration-300 ease-in-out
-          backdrop-blur-md shadow-lg
-
-          ${isHomePage
-            ? "bg-black/70"
-            : "bg-white/95 border-t border-gray-100"
-          }
-
-          ${scrolled
-            ? "top-[52px]"
-            : "top-[56px]"
-          }
-
-          ${menuOpen
-            ? "max-h-[400px] opacity-100"
-            : "max-h-0 opacity-0"
-          }
-        `}
-      >
-        <div className="flex flex-col px-6 py-4 gap-4">
-          {navItems.map((item) => {
-            const isActive = pathname === item.path;
-
-            return (
-              <Link key={item.path} to={item.path}>
-                <span
+                  to={item.path}
                   className={`
-                    block text-lg font-bold py-1 border-b
-
-                    ${isHomePage
-                      ? "text-white border-white/20"
-                      : "text-[#025CB8] border-gray-100"
-                    }
+                    flex items-center justify-between
+                    px-4 py-3 rounded-xl
+                    font-semibold transition-all duration-300
 
                     ${isActive
-                      ? "opacity-100"
-                      : "opacity-60"
+                      ? "bg-gradient-to-r from-[#025CB8] to-[#62AAEA] text-white"
+                      : "text-gray-700 hover:bg-[#025CB8]/5 hover:text-[#025CB8]"
                     }
                   `}
                 >
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
+                  <span>{item.label}</span>
 
-          <button
-            onClick={() => navigate("/login")}
-            className={`
-              mt-2 py-2 px-4 rounded-[10px] self-start
+                  {isActive && (
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  )}
+                </Link>
+              );
+            })}
 
-              ${isHomePage
-                ? "bg-white/20 border border-white/20"
-                : "bg-white"
-              }
-            `}
-            style={{
-              boxShadow: "0px 4px 4px #00000040",
-            }}
-          >
-            <span
-              className={`
-                text-lg font-bold
+            <div className="h-px bg-gray-100 my-2" />
 
-                ${isHomePage
-                  ? "text-white"
-                  : "text-[#025CB8]"
-                }
-              `}
+            <button
+              onClick={() => navigate("/login")}
+              className="
+                flex items-center justify-center
+                bg-gradient-to-r
+                from-[#025CB8]
+                to-[#62AAEA]
+                hover:from-[#0147A0]
+                hover:to-[#025CB8]
+                text-white
+                font-bold
+                py-3 rounded-xl
+                transition-all duration-300
+                shadow-md
+              "
             >
-              Akun
-            </span>
-          </button>
+              Masuk ke Akun
+            </button>
+          </div>
         </div>
       </div>
     </>
@@ -285,4 +271,3 @@ const HeaderComponent = () => {
 };
 
 export default HeaderComponent;
-// src/layout/header/index.tsx

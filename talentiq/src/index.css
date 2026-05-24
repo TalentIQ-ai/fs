@@ -53,7 +53,105 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* =========================
+   STAR BORDER ANIMATION
+========================= */
+
+@keyframes rotate-border {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.star-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.star-border::before {
+  content: "";
+
+  position: absolute;
+
+  width: 250%;
+  height: 250%;
+
+  background: conic-gradient(from 0deg,
+      transparent 0deg,
+      transparent 310deg,
+      rgba(98, 170, 234, 0.9) 330deg,
+      white 350deg,
+      transparent 360deg);
+
+  animation: rotate-border 6s linear infinite;
+
+  top: -75%;
+  left: -75%;
+}
+
+.star-border::after {
+  content: "";
+
+  position: absolute;
+  inset: 1px;
+
+  border-radius: inherit;
+
+  background: inherit;
+
+  z-index: 1;
+}
+
+.star-border-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* =========================
+   LOGO LOOP
+========================= */
+
+@keyframes logoLoop {
+  from {
+    transform: translateX(0%);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.logo-loop {
+  animation: logoLoop 25s linear infinite;
+}
+
+/* =========================
+   GRADUAL BLUR
+========================= */
+
+.gradual-blur-hidden {
+  opacity: 0;
+  filter: blur(12px);
+  transform: translateY(40px);
+}
+
+.gradual-blur-visible {
+  opacity: 1;
+  filter: blur(0px);
+  transform: translateY(0px);
+
+  transition:
+    opacity 1s ease,
+    filter 1s ease,
+    transform 1s ease;
 }

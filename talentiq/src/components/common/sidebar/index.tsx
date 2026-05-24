@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
   },
   {
     label: "Cari Lowongan",
-    path: "/lowongan-kerja",
+    path: "/auth/lowongan_kerja",
     icon: <Briefcase size={20} />,
   },
   {

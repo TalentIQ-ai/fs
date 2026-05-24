@@ -1,4 +1,4 @@
-// src/pages/analisis_skill/index.tsx
+// src/pages/auth/user-analisis-skill/index.tsx
 import {
   AlertCircle,
   ArrowRight,

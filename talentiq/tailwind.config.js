@@ -70,6 +70,57 @@ module.exports = {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
+      keyframes: {
+        "star-movement-top": {
+          "0%": {
+            transform: "translateX(-30%)",
+          },
+          "100%": {
+            transform: "translateX(30%)",
+          },
+        },
+
+        "star-movement-bottom": {
+          "0%": {
+            transform: "translateX(30%)",
+          },
+          "100%": {
+            transform: "translateX(-30%)",
+          },
+        },
+
+        "star-movement-left": {
+          "0%": {
+            transform: "translateY(-30%)",
+          },
+          "100%": {
+            transform: "translateY(30%)",
+          },
+        },
+
+        "star-movement-right": {
+          "0%": {
+            transform: "translateY(30%)",
+          },
+          "100%": {
+            transform: "translateY(-30%)",
+          },
+        },
+      },
+
+      animation: {
+        "star-movement-top":
+          "star-movement-top linear infinite alternate",
+
+        "star-movement-bottom":
+          "star-movement-bottom linear infinite alternate",
+
+        "star-movement-left":
+          "star-movement-left linear infinite alternate",
+
+        "star-movement-right":
+          "star-movement-right linear infinite alternate",
+      },
     },
   },
   plugins: [require('tailwindcss-animate')],

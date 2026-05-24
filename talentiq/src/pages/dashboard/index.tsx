@@ -238,7 +238,7 @@ const Section = ({
 }) => {
   const { ref, isVisible } = useScrollAnimation();
   return (
-    <div ref={ref} className={`${animClass(isVisible, direction)} ${className}`}>
+    <div ref={ref} className={`${animClass(isVisible, direction, 700, direction)} ${className}`}>
       {children}
     </div>
   );
@@ -652,3 +652,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+// src/pages/dashboard/index.tsx

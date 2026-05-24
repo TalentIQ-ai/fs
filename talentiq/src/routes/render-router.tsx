@@ -13,6 +13,7 @@ const LowonganKerja = lazy(() => import("@/pages/lowongan_kerja"));
 const UserAnalisisSkill = lazy(() => import("@/pages/auth/user-analisis-skill"));
 const RoadmapKarir = lazy(() => import("@/pages/auth/roadmap-karir"));
 const ProfilKursus = lazy(() => import("@/pages/auth/profil"));
+const UserLowonganKerja = lazy(() => import("@/pages/auth/lowongan_kerja"));
 
 const Login = lazy(() => import("@/pages/auth/login"));
 const Register = lazy(() => import("@/pages/auth/register"));
@@ -39,6 +40,7 @@ const RenderRouter = () => {
       <Route path="/jalur-karir" element={<JalurKarir />} />
       <Route path="/profil" element={<ProfilKursus />} />
       <Route path="/auth/roadmap-karir" element={<RoadmapKarir />} />
+      <Route path="/auth/lowongan_kerja" element={<UserLowonganKerja />} /> 
 
       {/* ================= 404 ================= */}
       <Route path="*" element={<NotFound />} />
@@ -47,3 +49,4 @@ const RenderRouter = () => {
 };
 
 export default RenderRouter;
+// src/routes/render-router.tsx

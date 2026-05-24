@@ -1,8 +1,20 @@
 // src/pages/home.tsx
 import { useNavigate } from "react-router-dom";
+import {
+  ArrowRight,
+  BrainCircuit,
+  Briefcase,
+  Clock,
+  Sparkles,
+  Target,
+  Trophy,
+  Upload,
+  Zap,
+  
+} from "lucide-react";
+
+import HeaderComponent from "@/layout/header";
 import { useScrollAnimation, animClass } from "@/hooks/use-scroll-animation";
-import bgHero from "@/assets/bg.jpg";
-import bg1 from "@/assets/bg1.jpg";
 
 // ── Animated Section Wrapper ──────────────────────────────────────────────────
 const AnimSection = ({
@@ -12,244 +24,518 @@ const AnimSection = ({
 }: {
   children: React.ReactNode;
   direction?: "up" | "down" | "left" | "right" | "fade";
-  delay?: number;
   className?: string;
 }) => {
-  const { ref, isVisible } = useScrollAnimation();
-  return (
-    <div ref={ref} className={`${animClass(isVisible, direction)} ${className}`}>
-      {children}
-    </div>
-  );
-};
-
-// ── Feature Card ──────────────────────────────────────────────────────────────
-const FeatureCard = ({
-  feature,
-}: {
-  feature: { title: string; desc: string; path: string; img: string };
-  delay: number;
-}) => {
-  const navigate = useNavigate();
   const { ref, isVisible } = useScrollAnimation();
 
   return (
     <div
       ref={ref}
-      className={`${animClass(isVisible, "up")}`}
+      className={`${animClass(isVisible, direction, 0)} ${className}`}
     >
-      <button
-        onClick={() => navigate(feature.path)}
-        className="flex w-full flex-col items-start py-8 px-6 rounded-[10px] border-0 text-left
-                   cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl
-                   focus:outline-none focus:ring-4 focus:ring-white/50 h-full"
-        style={{ background: "linear-gradient(180deg, #025CB8, #62AAEA)" }}
-      >
-        <img src={feature.img} className="w-12 h-12 mb-6 object-fill" alt={feature.title} />
-        <span className="text-white text-xl lg:text-2xl mb-3 font-semibold">{feature.title}</span>
-        <span className="text-white text-sm lg:text-base mb-6 leading-7">{feature.desc}</span>
-        <div className="flex items-center gap-2 mt-auto">
-          <span className="text-white/80 text-sm font-medium">Selengkapnya</span>
-          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-white/80">
-            <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </div>
-      </button>
+      {children}
     </div>
   );
 };
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+// ── Feature Cards ─────────────────────────────────────────────────────────────
+const features = [
+  {
+    title: "Analisis Skill",
+    desc: "AI membaca CV dan menganalisis skill teknis maupun soft skill secara otomatis.",
+    icon: <Sparkles size={22} />,
+    path: "/analisis-skill",
+    badge: "AI Analysis",
+  },
+  {
+    title: "Jalur Karir",
+    desc: "Dapatkan roadmap belajar dan pengembangan karir berdasarkan skill kamu.",
+    icon: <Target size={22} />,
+    path: "/jalur-karir",
+    badge: "Career Roadmap",
+  },
+  {
+    title: "Lowongan Pekerjaan",
+    desc: "Temukan lowongan yang cocok dengan kemampuan dan aspirasi karirmu.",
+    icon: <Briefcase size={22} />,
+    path: "/lowongan-kerja",
+    badge: "Job Matching",
+  },
+];
+
+// ── Steps ─────────────────────────────────────────────────────────────────────
+const steps = [
+  {
+    title: "Upload CV",
+    desc: "Upload CV format PDF atau DOCX.",
+    icon: <Upload size={20} />,
+  },
+  {
+    title: "AI Analisis Skill",
+    desc: "AI membaca skill, pengalaman, dan potensi karir.",
+    icon: <BrainCircuit size={20} />,
+  },
+  {
+    title: "Dapatkan Roadmap",
+    desc: "AI membuat jalur belajar dan karir personal.",
+    icon: <Target size={20} />,
+  },
+  {
+    title: "Temukan Lowongan",
+    desc: "Lihat pekerjaan yang cocok dengan profilmu.",
+    icon: <Briefcase size={20} />,
+  },
+];
+
+// ── Main Component ────────────────────────────────────────────────────────────
 const Home = () => {
   const navigate = useNavigate();
 
-  const features = [
-    {
-      title: "Analisis Skill",
-      desc: "Pemetaan mendalam terhadap kompetensi teknis dan soft skills Anda melalui penilaian berbasis AI yang objektif.",
-      path: "/analisis_skill",
-      img: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/7UFjhTHX6R/td3zvffq_expires_30_days.png",
-    },
-    {
-      title: "Jalur Karir",
-      desc: "Rekomendasi langkah karir selanjutnya berdasarkan data pasar tenaga kerja real-time dan aspirasi pribadi Anda.",
-      path: "/jalur-karir",
-      img: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/7UFjhTHX6R/rn7ixpy3_expires_30_days.png",
-    },
-    {
-      title: "Lowongan Pekerjaan",
-      desc: "Cari lowongan yang benar-benar sesuai dengan profil dan spesifikasi keahlian Anda.",
-      path: "/lowongan-kerja",
-      img: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/7UFjhTHX6R/7lcsjx5k_expires_30_days.png",
-    },
-  ];
-
   return (
-    <div className="flex flex-col bg-white min-h-screen">
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <HeaderComponent />
 
-      <div className="w-full pt-[20px] md:pt-[0px]" style={{ background: "linear-gradient(180deg, #ffffff)" }}>
-        <div className="flex flex-col items-center">
+      <div className="flex-1 pt-[0px]">
 
-          {/* ── HERO ── */}
-          <section
-            className="w-full relative overflow-hidden"
-            style={{
-              backgroundImage: `url(${bgHero})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          >
-            <div className="absolute inset-0 bg-black/10"></div>
+        {/* ── HERO ─────────────────────────────────────────────────────────── */}
+        <section
+          className="relative overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(135deg, #00458D 0%, #025CB8 45%, #62AAEA 100%)",
+          }}
+        >
+          {/* Blur Elements */}
+          <div className="absolute top-0 left-0 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl" />
 
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-[50px] py-16 md:py-24">
+          <div className="relative z-10 max-w-7xl mx-auto px-5 lg:px-8 py-20 lg:py-28">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
 
-              <div className="flex flex-col lg:flex-row justify-between items-center gap-12 lg:gap-8">
+              {/* LEFT */}
+              <AnimSection direction="left">
+                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-full mb-6 backdrop-blur-sm">
+                  <Sparkles size={14} className="text-white" />
+                  <span className="text-white/90 text-xs font-bold">
+                    AI Career Intelligence Platform
+                  </span>
+                </div>
 
-                {/* LEFT */}
-                <AnimSection
-                  direction="left"
-                  className="flex flex-col items-start w-full lg:max-w-[520px]"
-                >
-                  <button className="flex items-center bg-white/20 backdrop-blur-md py-1 px-3 mb-4 gap-2 rounded-[30px] border-0">
-                    <img
-                      src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/7UFjhTHX6R/z72i6j9m_expires_30_days.png"
-                      className="w-4 h-4 object-fill"
-                      alt="AI"
-                    />
+                <h1 className="text-white text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
+                  Bangun Karir IT
+                  <span className="block text-[#DCEEFF]">
+                    dengan Bantuan AI
+                  </span>
+                </h1>
 
-                    <span className="text-white text-sm">
-                      AI-Powered Career Intelligence
-                    </span>
+                <p className="text-blue-100 text-lg leading-8 mt-6 max-w-2xl">
+                  TalentIQ AI membantu kamu memahami skill, menentukan jalur
+                  karir terbaik, dan menemukan lowongan kerja yang paling cocok
+                  menggunakan analisis AI modern berbasis data industri.
+                </p>
+
+                <div className="flex flex-wrap gap-4 mt-8">
+                  <button
+                    onClick={() => navigate("/analisis-skill")}
+                    className="bg-white text-[#025CB8] font-bold px-7 py-4 rounded-2xl
+                               hover:bg-gray-100 transition-all duration-300
+                               shadow-lg hover:shadow-xl flex items-center gap-2"
+                  >
+                    Mulai Analisis Skill
+                    <ArrowRight size={18} />
                   </button>
 
-                  <h1 className="text-white text-3xl sm:text-4xl lg:text-[40px] font-bold mb-4 leading-[1.3]">
-                    Masa Depan Karir Anda,<br />
-                    Terukur dan Terarah.
-                  </h1>
+                  <button
+                    onClick={() => navigate("/jalur-karir")}
+                    className="border border-white/30 text-white font-semibold
+                               px-7 py-4 rounded-2xl hover:bg-white/10
+                               transition-all duration-300"
+                  >
+                    Lihat Jalur Karir
+                  </button>
+                </div>
 
-                  <p className="text-white/90 text-base lg:text-lg mb-6 leading-8 max-w-[500px]">
-                    TalentIQ AI menggunakan algoritma kecerdasan buatan tingkat lanjut
-                    untuk menganalisis keahlian Anda, memetakan jalur karir yang optimal,
-                    dan menghubungkan Anda dengan peluang kerja terbaik.
-                  </p>
-
-                </AnimSection>
-
-                {/* Right */}
-                <AnimSection direction="right" delay={150} className="w-full lg:w-auto flex justify-center">
-                  <div className="flex flex-col shrink-0 items-center relative">
+                {/* Mini Stats */}
+                <div className="flex flex-wrap gap-4 mt-10">
+                  {[
+                    { num: "10K+", label: "Lowongan IT" },
+                    { num: "25+", label: "Skill Dianalisis" },
+                    { num: "AI", label: "Career Matching" },
+                  ].map((item) => (
                     <div
-                      className="flex flex-col items-start bg-cover bg-center rounded-[20px] w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[430px] lg:h-[430px]"
-                      style={{ backgroundImage: "url(https://storage.googleapis.com/tagjs-prod.appspot.com/v1/7UFjhTHX6R/mjsm7op3_expires_30_days.png)" }}
+                      key={item.label}
+                      className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-5 py-4"
                     >
-                      <span className="text-black text-3xl lg:text-5xl font-bold p-8">Statistik</span>
+                      <p className="text-white text-2xl font-black">
+                        {item.num}
+                      </p>
+                      <p className="text-blue-100 text-xs mt-1">
+                        {item.label}
+                      </p>
                     </div>
-                    {/* Floating Card */}
-                    <div
-                      className="flex flex-col items-start bg-white absolute bottom-[-30px] left-2 py-4 px-5 gap-2 rounded-xl"
-                      style={{ boxShadow: "0px 4px 6px #0000001A" }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <img src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/7UFjhTHX6R/kit608t2_expires_30_days.png" className="w-5 h-3 object-fill" alt="Insight" />
-                        <span className="text-[#0061A4] text-xs font-bold">AI INSIGHT</span>
+                  ))}
+                </div>
+              </AnimSection>
+
+              {/* RIGHT */}
+              <AnimSection direction="right">
+                <div className="relative">
+
+                  {/* Main Dashboard Card */}
+                  <div className="bg-white/95 backdrop-blur-md rounded-[32px] p-6 shadow-2xl border border-white/40">
+
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="font-black text-gray-800 text-lg">
+                          AI Career Dashboard
+                        </h3>
+                        <p className="text-gray-400 text-sm mt-1">
+                          Personal career intelligence
+                        </p>
                       </div>
-                      <span className="text-[#191C21] text-sm w-[200px] sm:w-[240px] leading-5">
-                        Keahlian 'Data Analytics' Anda memiliki kecocokan 94% dengan tren industri 2026.
-                      </span>
+
+                      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center">
+                        <Zap size={24} className="text-[#025CB8]" />
+                      </div>
+                    </div>
+
+                    {/* Skill Match */}
+                    <div className="space-y-4 mb-6">
+                      {[
+                        {
+                          label: "Frontend Development",
+                          value: "92%",
+                        },
+                        {
+                          label: "UI/UX Design",
+                          value: "78%",
+                        },
+                        {
+                          label: "Data Analysis",
+                          value: "65%",
+                        },
+                      ].map((item) => (
+                        <div key={item.label}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-600">
+                              {item.label}
+                            </span>
+
+                            <span className="text-sm font-bold text-[#025CB8]">
+                              {item.value}
+                            </span>
+                          </div>
+
+                          <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                            <div
+                              className="h-3 rounded-full"
+                              style={{
+                                width: item.value,
+                                background:
+                                  "linear-gradient(90deg, #025CB8, #62AAEA)",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Roadmap Preview */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-5">
+                      <p className="text-[#025CB8] text-xs font-bold uppercase tracking-wider mb-4">
+                        Roadmap Progress
+                      </p>
+
+                      <div className="space-y-3">
+                        {[
+                          {
+                            title: "Frontend Fundamentals",
+                            progress: 100,
+                            done: true,
+                          },
+                          {
+                            title: "React Ecosystem",
+                            progress: 70,
+                          },
+                          {
+                            title: "TypeScript Advanced",
+                            progress: 0,
+                            locked: true,
+                          },
+                        ].map((step, i) => (
+                          <div
+                            key={i}
+                            className={`flex items-center gap-3 ${step.locked ? "opacity-40" : ""
+                              }`}
+                          >
+                            <div
+                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+                              ${step.done
+                                  ? "bg-green-500 text-white"
+                                  : step.locked
+                                    ? "bg-gray-200 text-gray-500"
+                                    : "bg-[#025CB8] text-white"
+                                }`}
+                            >
+                              {step.done ? "✓" : step.locked ? "🔒" : i + 1}
+                            </div>
+
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-gray-700">
+                                {step.title}
+                              </p>
+
+                              {!step.locked && (
+                                <div className="mt-1 h-1.5 bg-white rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-[#025CB8]"
+                                    style={{
+                                      width: `${step.progress}%`,
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* AI Insight */}
+                    <div className="bg-gradient-to-r from-[#025CB8] to-[#62AAEA] rounded-2xl p-5 text-white">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles size={16} />
+                        <p className="font-bold text-sm">AI Insight</p>
+                      </div>
+
+                      <p className="text-sm leading-7 text-blue-50">
+                        Skill React & TypeScript kamu memiliki kecocokan tinggi
+                        untuk posisi Frontend Engineer dengan estimasi kesiapan
+                        kerja dalam 4 bulan.
+                      </p>
                     </div>
                   </div>
-                </AnimSection>
-              </div>
+                </div>
+              </AnimSection>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* ── WHY ── */}
-          <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-[50px] pt-16 pb-16 md:pb-24 text-center">
-            <AnimSection direction="up">
-              <h2 className="text-[#191C21] text-2xl sm:text-[32px] font-bold mb-6">Kenapa Talentiq-AI?</h2>
-              <p className="text-[#424752] text-sm sm:text-base leading-8 max-w-[900px] mx-auto">
-                Talentiq-AI membantu kamu memahami kemampuan dan potensi karir dengan lebih cepat, akurat,
-                dan berbasis data industri nyata. Dengan analisis AI yang cerdas, kamu bisa mengetahui skill
-                yang perlu ditingkatkan, mendapatkan rekomendasi karir yang sesuai, serta roadmap pembelajaran
-                yang jelas untuk mencapai pekerjaan impianmu. Jadi, kamu nggak perlu bingung menentukan arah
-                karir karena semua insight diberikan secara terarah dan relevan dengan kebutuhan dunia kerja saat ini.
-              </p>
-            </AnimSection>
-          </section>
-
-          {/* ── CV SCAN ── */}
-          <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-[50px] pb-16 md:pb-24">
-            <AnimSection direction="up">
-              <h2 className="text-[#191C21] text-2xl sm:text-[32px] font-bold text-center mb-8 max-w-[900px] mx-auto leading-snug">
-                Bukan sekadar cari kerja. Kami bantu rancang ekosistem pertumbuhan karir Anda yang
-                berkelanjutan lewat analisis data yang presisi.
-              </h2>
-            </AnimSection>
-
-            <AnimSection direction="up" delay={150}>
-              <div
-                className="relative overflow-hidden rounded-[20px]"
-                style={{
-                  backgroundImage: `url(${bg1})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                  boxShadow: "0px 4px 10px #00000080",
-                }}
-              >
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black/50"></div>
-
-                {/* Content */}
-                <button
-                  className="relative z-10 flex flex-col items-center justify-center w-full py-16 sm:py-[81px]
-                   border border-solid border-white/20 hover:border-[#025CB8]
-                   transition-colors duration-300"
+        {/* ── FEATURE STATS ─────────────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-5 lg:px-8 py-14">
+          <AnimSection>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                {
+                  icon: <Sparkles size={20} className="text-[#025CB8]" />,
+                  bg: "bg-blue-50",
+                  num: "94%",
+                  label: "Akurasi AI Matching",
+                },
+                {
+                  icon: <Briefcase size={20} className="text-green-600" />,
+                  bg: "bg-green-50",
+                  num: "10K+",
+                  label: "Lowongan IT",
+                },
+                {
+                  icon: <Target size={20} className="text-purple-500" />,
+                  bg: "bg-purple-50",
+                  num: "6+",
+                  label: "Jalur Karir",
+                },
+                {
+                  icon: <Clock size={20} className="text-orange-500" />,
+                  bg: "bg-orange-50",
+                  num: "≤12",
+                  label: "Bulan Estimasi",
+                },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center gap-4"
                 >
-                  <img
-                    src="https://storage.googleapis.com/tagjs-prod.appspot.com/v1/7UFjhTHX6R/urvgnt1g_expires_30_days.png"
-                    className="w-16 sm:w-20 h-auto mb-10 sm:mb-[68px] object-fill"
-                    alt="CV"
-                  />
+                  <div
+                    className={`${item.bg} w-12 h-12 rounded-2xl flex items-center justify-center shrink-0`}
+                  >
+                    {item.icon}
+                  </div>
 
-                  <span className="text-white text-3xl sm:text-[50px] text-center px-4 font-bold">
-                    Scan CV Anda
-                  </span>
-
-                  <p className="text-white/80 text-center mt-4 max-w-[600px] px-4 leading-7">
-                    Upload CV Anda dan biarkan AI menganalisis kemampuan,
-                    kecocokan industri, dan rekomendasi karir terbaik untuk masa depan Anda.
-                  </p>
-                </button>
-              </div>
-            </AnimSection>
-          </section>
-
-          {/* ── FEATURES ── */}
-          <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-[50px] pb-20 md:pb-[120px] text-center">
-            <AnimSection direction="up">
-              <h2 className="text-[#191C21] text-2xl sm:text-[32px] font-bold mb-4">
-                Bagaimana Kami Membantu Anda?
-              </h2>
-              <p className="text-[#424752] text-sm sm:text-base mb-10 max-w-[600px] mx-auto">
-                Kami tidak sekadar mencari pekerjaan; kami merancang ekosistem pertumbuhan karir yang
-                berkelanjutan menggunakan data dan presisi.
-              </p>
-            </AnimSection>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {features.map((feature, i) => (
-                <FeatureCard key={feature.title} feature={feature} delay={i * 100} />
+                  <div>
+                    <p className="text-2xl font-black text-gray-800">
+                      {item.num}
+                    </p>
+                    <p className="text-gray-400 text-sm font-medium">
+                      {item.label}
+                    </p>
+                  </div>
+                </div>
               ))}
             </div>
-          </section>
+          </AnimSection>
+        </section>
 
-        </div>
+        {/* ── FEATURES ─────────────────────────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-5 lg:px-8 pb-24">
+          <AnimSection>
+            <div className="text-center mb-14">
+              <h2 className="text-3xl lg:text-4xl font-black text-gray-800">
+                Semua yang Kamu Butuhkan
+              </h2>
+
+              <p className="text-gray-500 text-lg mt-4 max-w-2xl mx-auto leading-8">
+                TalentIQ AI membantu perjalanan karirmu dari analisis skill,
+                roadmap belajar, hingga pencarian pekerjaan.
+              </p>
+            </div>
+          </AnimSection>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {features.map((feature, i) => (
+              <AnimSection key={feature.title}>
+                <button
+                  onClick={() => navigate(feature.path)}
+                  className="group w-full bg-white rounded-[32px] border border-gray-100 shadow-sm
+                             hover:shadow-2xl transition-all duration-300
+                             hover:-translate-y-1 overflow-hidden text-left"
+                >
+                  <div className="h-1.5 w-full bg-gradient-to-r from-[#025CB8] to-[#62AAEA]" />
+
+                  <div className="p-7">
+                    <div className="flex items-center justify-between mb-6">
+                      <div
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-white"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #025CB8, #62AAEA)",
+                        }}
+                      >
+                        {feature.icon}
+                      </div>
+
+                      <span className="text-[11px] font-bold text-[#025CB8] bg-[#025CB8]/10 px-3 py-1 rounded-full">
+                        {feature.badge}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xl font-black text-gray-800 mb-3">
+                      {feature.title}
+                    </h3>
+
+                    <p className="text-gray-500 text-sm leading-7 mb-8">
+                      {feature.desc}
+                    </p>
+
+                    <div className="flex items-center gap-2 text-[#025CB8] font-bold text-sm">
+                      Selengkapnya
+                      <ArrowRight
+                        size={16}
+                        className="group-hover:translate-x-1 transition-transform"
+                      />
+                    </div>
+                  </div>
+                </button>
+              </AnimSection>
+            ))}
+          </div>
+        </section>
+
+        {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
+        <section className="max-w-6xl mx-auto px-5 lg:px-8 pb-24">
+          <AnimSection>
+            <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-8 lg:p-12">
+
+              <div className="text-center mb-14">
+                <h2 className="text-3xl lg:text-4xl font-black text-gray-800">
+                  Cara Kerjanya
+                </h2>
+
+                <p className="text-gray-500 mt-4 text-lg">
+                  Hanya perlu beberapa langkah sederhana.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-4 gap-8">
+                {steps.map((step, i) => (
+                  <div key={step.title} className="text-center relative">
+
+                    <div
+                      className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center
+                                 text-white mb-5"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #025CB8, #62AAEA)",
+                      }}
+                    >
+                      {step.icon}
+                    </div>
+
+                    <h3 className="font-bold text-gray-800 mb-2">
+                      {step.title}
+                    </h3>
+
+                    <p className="text-sm text-gray-500 leading-7">
+                      {step.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </AnimSection>
+        </section>
+
+        {/* ── CTA ─────────────────────────────────────────────────────── */}
+        <section className="max-w-6xl mx-auto px-5 lg:px-8 pb-24">
+          <AnimSection>
+            <div
+              className="rounded-[32px] p-10 lg:p-14 text-center shadow-2xl"
+              style={{
+                background:
+                  "linear-gradient(135deg, #025CB8, #3B82C4)",
+              }}
+            >
+              <div className="w-20 h-20 rounded-[24px] bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-6">
+                <Trophy size={38} className="text-white" />
+              </div>
+
+              <h2 className="text-3xl lg:text-5xl font-black text-white leading-tight">
+                Siap Mengembangkan
+                <span className="block">Karirmu?</span>
+              </h2>
+
+              <p className="text-blue-100 text-lg mt-5 max-w-2xl mx-auto leading-8">
+                Analisis skill, temukan roadmap belajar, dan dapatkan pekerjaan
+                yang sesuai dengan kemampuanmu bersama TalentIQ AI.
+              </p>
+
+              <div className="flex flex-wrap justify-center gap-4 mt-8">
+                <button
+                  onClick={() => navigate("/analisis-skill")}
+                  className="px-8 py-4 rounded-2xl bg-white text-[#025CB8]
+                             font-bold text-lg shadow-lg hover:shadow-2xl
+                             hover:-translate-y-1 transition-all duration-300
+                             inline-flex items-center gap-2"
+                >
+                  Mulai Sekarang
+                  <ArrowRight size={20} />
+                </button>
+
+                <button
+                  onClick={() => navigate("/lowongan-kerja")}
+                  className="px-8 py-4 rounded-2xl border border-white/30
+                             text-white font-bold text-lg hover:bg-white/10
+                             transition-all duration-300"
+                >
+                  Lihat Lowongan
+                </button>
+              </div>
+            </div>
+          </AnimSection>
+        </section>
       </div>
     </div>
   );
 };
 
 export default Home;
-// src/pages/home.tsx

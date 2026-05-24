@@ -379,3 +379,4 @@ const CariLowongan = () => {
 };
 
 export default CariLowongan;
+// src/pages/auth/lowongan_kerja/index.tsx

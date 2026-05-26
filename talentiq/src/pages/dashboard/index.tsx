@@ -250,15 +250,22 @@ const Section = ({
 const Dashboard = () => {
   const navigate = useNavigate();
   const [hoveredSkill, setHoveredSkill] = useState<number | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
   const { user, lastUpdated, readinessScore, targetRole, ownedSkills, neededSkills, roadmap, prioritySkills } = mockData;
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar
+      collapsed={collapsed}
+        setCollapsed={setCollapsed}
+      />
 
       {/* Main content — offset for sidebar on desktop */}
-      <div className="lg:ml-[260px] pb-24 lg:pb-8">
+      <div
+        className={`pb-24 lg:pb-8 pt-[72px] lg:pt-0 transition-all duration-300 ${collapsed ? "lg:ml-[90px]" : "lg:ml-[260px]"
+          }`}
+      >
 
         {/* ── HEADER BAR ─────────────────────────────────────────────────── */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-5 lg:px-8 py-4">
@@ -288,11 +295,11 @@ const Dashboard = () => {
         </div>
 
         {/* ── CONTENT AREA ─────────────────────────────────────────────────── */}
-        <div className="max-w-6xl mx-auto px-5 lg:px-8 pt-7 space-y-7">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-5 lg:px-8 pt-6 sm:pt-7 space-y-7">
 
           {/* ── SECTION 1 — SKILL GAP CARDS ────────────────────────────── */}
           <Section direction="up">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
 
               {/* Card 1 — Owned Skills */}
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
@@ -411,7 +418,7 @@ const Dashboard = () => {
               </div>
 
               {/* Timeline — horizontal on desktop, vertical on mobile */}
-              <div className="hidden md:flex items-start gap-0 relative">
+              <div className="hidden xl:flex items-start gap-0 relative overflow-x-auto pb-2">
                 {roadmap.map((step, idx) => {
                   const cfg = roadmapConfig[step.status];
                   const isLast = idx === roadmap.length - 1;
@@ -457,7 +464,7 @@ const Dashboard = () => {
               </div>
 
               {/* Mobile vertical timeline */}
-              <div className="md:hidden flex flex-col gap-4">
+              <div className="xl:hidden flex flex-col gap-4">
                 {roadmap.map((step, idx) => {
                   const cfg = roadmapConfig[step.status];
                   const isLast = idx === roadmap.length - 1;
@@ -586,7 +593,7 @@ const Dashboard = () => {
 
           {/* ── SECTION 5 — BOTTOM BANNERS ──────────────────────────────── */}
           <Section direction="up">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pb-4">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 pb-4">
 
               {/* Banner 1 — Lowongan */}
               <div

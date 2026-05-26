@@ -11,11 +11,10 @@ import {
   Target,
   X,
 } from "lucide-react";
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import Sidebar from "@/components/common/sidebar";
-
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA MOCKS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,12 +153,19 @@ const ProfilKursus = () => {
     setSkills(skills.filter((s) => s !== skillToRemove));
   };
 
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
-      <Sidebar />
+      <Sidebar
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+      />
+      <div
+        className={`pb-24 lg:pb-10 transition-all duration-300 ${collapsed ? "lg:ml-[90px]" : "lg:ml-[260px]"
+          }`}
+      >
 
-      <div className="lg:ml-[260px] pb-24 lg:pb-10">
-        
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-5 lg:px-8 py-4">
           <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -172,26 +178,24 @@ const ProfilKursus = () => {
                 Pantau perkembangan belajarmu dan temukan kursus baru
               </p>
             </div>
-            
+
             {/* Tabs Selector */}
             <div className="flex p-1 bg-gray-100 rounded-xl self-start sm:self-auto">
               <button
                 onClick={() => setActiveTab("progress")}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  activeTab === "progress"
-                    ? "bg-white text-[#025CB8] shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${activeTab === "progress"
+                  ? "bg-white text-[#025CB8] shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 Progress Kursus
               </button>
               <button
                 onClick={() => setActiveTab("profil")}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  activeTab === "profil"
-                    ? "bg-white text-[#025CB8] shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${activeTab === "profil"
+                  ? "bg-white text-[#025CB8] shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 Profil Saya
               </button>
@@ -215,7 +219,7 @@ const ProfilKursus = () => {
                     <p className="text-2xl font-black text-gray-800">2</p>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                     <Award size={24} className="text-green-600" />
@@ -237,7 +241,7 @@ const ProfilKursus = () => {
                 </div>
 
                 <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4"
-                     style={{ background: "linear-gradient(135deg, #FFF7ED, #FFEDD5)" }}>
+                  style={{ background: "linear-gradient(135deg, #FFF7ED, #FFEDD5)" }}>
                   <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
                     <Flame size={24} className="text-orange-500" />
                   </div>
@@ -260,17 +264,17 @@ const ProfilKursus = () => {
                       <div className="flex gap-4">
                         {/* Thumbnail */}
                         <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0"
-                             style={{ backgroundColor: course.bg, color: course.color }}>
+                          style={{ backgroundColor: course.bg, color: course.color }}>
                           <BookOpen size={28} />
                         </div>
-                        
+
                         {/* Info */}
                         <div className="flex-1">
                           <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500 mb-1">
                             {course.platform}
                           </span>
                           <h3 className="font-bold text-gray-800 leading-tight mb-2">{course.title}</h3>
-                          
+
                           {/* Progress */}
                           <div className="flex items-center justify-between text-xs font-bold mb-1">
                             <span className="text-gray-500">Progress</span>
@@ -283,10 +287,10 @@ const ProfilKursus = () => {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="mt-5 flex justify-end">
                         <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-sm hover:-translate-y-0.5 transition-transform"
-                                style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
+                          style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
                           Lanjutkan Belajar
                           <ArrowRight size={14} />
                         </button>
@@ -311,9 +315,9 @@ const ProfilKursus = () => {
                     <div key={course.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition-all group cursor-pointer flex flex-col">
                       {/* Thumbnail Placeholder */}
                       <div className="h-32 w-full flex items-center justify-center relative"
-                           style={{ backgroundColor: `${course.color}15` }}>
+                        style={{ backgroundColor: `${course.color}15` }}>
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white shadow-sm"
-                             style={{ color: course.color }}>
+                          style={{ color: course.color }}>
                           <BookOpen size={24} />
                         </div>
                         {course.badge && (
@@ -322,7 +326,7 @@ const ProfilKursus = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Content */}
                       <div className="p-4 flex flex-col flex-1">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -331,7 +335,7 @@ const ProfilKursus = () => {
                         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-3 group-hover:text-[#025CB8] transition-colors">
                           {course.title}
                         </h3>
-                        
+
                         <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
                           <div className="flex flex-col">
                             <span className="text-xs font-semibold text-gray-600">{course.platform}</span>
@@ -360,12 +364,12 @@ const ProfilKursus = () => {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-6 sm:p-8">
                   <h2 className="text-xl font-bold text-gray-800 mb-6 border-b border-gray-100 pb-4">Edit Profil Saya</h2>
-                  
+
                   {/* Avatar Section */}
                   <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
                     <div className="relative">
                       <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl text-white font-bold shadow-md"
-                           style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
+                        style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
                         BS
                       </div>
                       <button className="absolute bottom-0 right-0 w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-[#025CB8] hover:border-blue-200 shadow-sm transition-colors">
@@ -460,7 +464,7 @@ const ProfilKursus = () => {
                     Batal
                   </button>
                   <button className="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-md hover:-translate-y-0.5 transition-all"
-                          style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
+                    style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
                     Simpan Perubahan
                   </button>
                 </div>

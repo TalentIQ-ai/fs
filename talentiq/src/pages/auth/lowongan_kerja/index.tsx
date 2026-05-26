@@ -122,13 +122,18 @@ const aspirationalJobs = [
 // ─────────────────────────────────────────────────────────────────────────────
 const CariLowongan = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
-      <Sidebar />
+      <Sidebar collapsed={collapsed}
+        setCollapsed={setCollapsed} />
 
-      <div className="lg:ml-[260px] pb-24 lg:pb-10">
-        
+      <div
+        className={`pb-24 lg:pb-10 transition-all duration-300 ${collapsed ? "lg:ml-[90px]" : "lg:ml-[260px]"
+          }`}
+      >
+
         {/* ── HEADER & SEARCH ───────────────────────────────────────────── */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
           <div className="max-w-6xl mx-auto px-5 lg:px-8 py-5">
@@ -169,9 +174,9 @@ const CariLowongan = () => {
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
                 <Filter size={14} /> Industri <ChevronDown size={14} />
               </button>
-              
+
               <div className="w-px h-6 bg-gray-200 mx-2 hidden sm:block"></div>
-              
+
               <button className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1">
                 <X size={14} /> Reset Filter
               </button>
@@ -181,7 +186,7 @@ const CariLowongan = () => {
 
         {/* ── CONTENT AREA ──────────────────────────────────────────────── */}
         <div className="max-w-6xl mx-auto px-5 lg:px-8 pt-6 space-y-10">
-          
+
           {/* Summary */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
             <div>
@@ -208,12 +213,12 @@ const CariLowongan = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {matchedJobs.map((job) => (
                 <div key={job.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col">
-                  
+
                   {/* Header */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex gap-3">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
-                           style={{ backgroundColor: job.logoColor }}>
+                        style={{ backgroundColor: job.logoColor }}>
                         {job.company.charAt(0)}
                       </div>
                       <div>
@@ -295,7 +300,7 @@ const CariLowongan = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {aspirationalJobs.map((job) => (
                 <div key={job.id} className="bg-white p-5 rounded-2xl border border-gray-200/60 shadow-sm hover:shadow-md transition-shadow group flex flex-col relative overflow-hidden">
-                  
+
                   {/* Subtle Background Pattern */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl opacity-50 pointer-events-none -mr-10 -mt-10"></div>
 
@@ -303,7 +308,7 @@ const CariLowongan = () => {
                   <div className="flex justify-between items-start mb-4 relative z-10">
                     <div className="flex gap-3">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
-                           style={{ backgroundColor: job.logoColor }}>
+                        style={{ backgroundColor: job.logoColor }}>
                         {job.company.charAt(0)}
                       </div>
                       <div>

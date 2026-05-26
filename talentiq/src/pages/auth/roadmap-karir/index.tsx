@@ -122,12 +122,20 @@ const CustomTooltip = ({ active, payload }: any) => {
 const RoadmapKarir = () => {
   const navigate = useNavigate();
 
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
-      <Sidebar />
+      <Sidebar
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+      />
 
-      <div className="lg:ml-[260px] pb-24 lg:pb-10">
-        
+      <div
+        className={`pb-24 lg:pb-10 transition-all duration-300 ${collapsed ? "lg:ml-[90px]" : "lg:ml-[260px]"
+          }`}
+      >
+
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-5 lg:px-8 py-4">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -160,7 +168,7 @@ const RoadmapKarir = () => {
                 <p className="text-xl font-black text-gray-800">4</p>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                 <CheckCircle2 size={20} className="text-green-600" />
@@ -193,7 +201,7 @@ const RoadmapKarir = () => {
           </div>
 
           <div className="flex flex-col lg:flex-row gap-6">
-            
+
             {/* ── LEFT: TIMELINE ────────────────────────────────────────── */}
             <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
               <h2 className="text-base font-bold text-gray-800 mb-8 flex items-center gap-2">
@@ -216,9 +224,9 @@ const RoadmapKarir = () => {
                       <div key={step.id} className={`relative flex gap-4 sm:gap-6 ${isLocked ? "opacity-50" : ""}`}>
                         {/* Status Icon */}
                         <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm transition-all duration-300
-                          ${isDone ? "bg-green-500 text-white" : 
-                            isActive ? "bg-[#025CB8] text-white ring-4 ring-blue-100" : 
-                            "bg-gray-100 text-gray-400 border-2 border-white"}`}
+                          ${isDone ? "bg-green-500 text-white" :
+                            isActive ? "bg-[#025CB8] text-white ring-4 ring-blue-100" :
+                              "bg-gray-100 text-gray-400 border-2 border-white"}`}
                         >
                           {isDone ? <CheckCircle2 size={20} /> : isLocked ? <Lock size={18} /> : step.icon}
                         </div>
@@ -233,9 +241,9 @@ const RoadmapKarir = () => {
                                 <h3 className="font-bold text-gray-800 text-base">{`Tahap ${step.id}: ${step.title}`}</h3>
                                 {/* Badge */}
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider
-                                  ${isDone ? "bg-green-100 text-green-700" : 
-                                    isActive ? "bg-blue-100 text-[#025CB8]" : 
-                                    "bg-gray-100 text-gray-500"}`}
+                                  ${isDone ? "bg-green-100 text-green-700" :
+                                    isActive ? "bg-blue-100 text-[#025CB8]" :
+                                      "bg-gray-100 text-gray-500"}`}
                                 >
                                   {isDone ? "Selesai" : isActive ? "Sedang Berjalan" : "Belum Dimulai"}
                                 </span>
@@ -252,9 +260,9 @@ const RoadmapKarir = () => {
                           <div className="flex flex-wrap gap-2 mb-4">
                             {step.skills.map(skill => (
                               <span key={skill} className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border
-                                ${isDone ? "bg-white border-green-200 text-green-700" : 
-                                  isActive ? "bg-white border-blue-200 text-[#025CB8]" : 
-                                  "bg-gray-50 border-gray-200 text-gray-500"}`}
+                                ${isDone ? "bg-white border-green-200 text-green-700" :
+                                  isActive ? "bg-white border-blue-200 text-[#025CB8]" :
+                                    "bg-gray-50 border-gray-200 text-gray-500"}`}
                               >
                                 {skill}
                               </span>
@@ -305,14 +313,14 @@ const RoadmapKarir = () => {
 
             {/* ── RIGHT: RADAR & RECOMMENDATIONS ────────────────────────── */}
             <div className="w-full lg:w-[320px] space-y-6">
-              
+
               {/* Radar Chart Card */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                 <h2 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <LineChart size={16} className="text-[#025CB8]" />
                   Peta Skill Kamu Saat Ini
                 </h2>
-                
+
                 <div className="h-[220px] w-full relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
@@ -340,7 +348,7 @@ const RoadmapKarir = () => {
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
-                
+
                 <div className="flex items-center justify-center gap-4 mt-2 text-[10px] font-semibold text-gray-500">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-sm bg-[#62AAEA] opacity-80" />
@@ -355,7 +363,7 @@ const RoadmapKarir = () => {
 
               {/* Recommendations Card */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5"
-                   style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)" }}>
+                style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)" }}>
                 <h2 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <BrainCircuit size={16} className="text-purple-500" />
                   Rekomendasi AI Selanjutnya
@@ -373,7 +381,7 @@ const RoadmapKarir = () => {
                   ))}
                 </div>
                 <button className="w-full mt-5 py-2 rounded-xl text-xs font-bold text-white shadow-md hover:shadow-lg transition-all active:scale-95 flex justify-center items-center gap-2"
-                        style={{ background: "linear-gradient(135deg, #8B5CF6, #6D28D9)" }}>
+                  style={{ background: "linear-gradient(135deg, #8B5CF6, #6D28D9)" }}>
                   Buat Rencana Harian
                   <ArrowRight size={14} />
                 </button>

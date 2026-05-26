@@ -1,16 +1,24 @@
+// talentiq-api/prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // ← Transaction Pooler (runtime)
+  directUrl = env("DIRECT_URL")     // ← Direct Connection (migrate)
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id               Int       @id @default(autoincrement())
+  name             String
+  email            String    @unique
+  password         String
+  isVerified       Boolean   @default(false)
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }

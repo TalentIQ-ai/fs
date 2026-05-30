@@ -1,32 +1,36 @@
-// src/pages/auth/profil/index.tsx
 import {
   ArrowRight,
   Award,
   BookOpen,
   Camera,
+  CheckCircle2,
   Clock,
   Flame,
+  Loader2,
   PlayCircle,
-  Star,
-  Target,
   X,
 } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Sidebar from "@/components/common/sidebar";
-// ─────────────────────────────────────────────────────────────────────────────
-// DATA MOCKS
-// ─────────────────────────────────────────────────────────────────────────────
-const activeCourses = [
+import {
+  getProfileService,
+  updateProfileService,
+  UpdateProfilePayload,
+  UserWithProfile,
+} from "@/services/profile.service";
+
+// dummy dulu, nanti tinggal tarik API aja
+const enrolledCourseList = [
   {
     id: 1,
     title: "SQL untuk Analisis Data",
     platform: "Dicoding",
     progress: 65,
     lastAccessed: "2 hari lalu",
-    color: "#025CB8",
-    bg: "#EFF6FF",
+    accent: "#025CB8",
+    bgSoft: "#EFF6FF",
   },
   {
     id: 2,
@@ -34,12 +38,12 @@ const activeCourses = [
     platform: "Coursera",
     progress: 30,
     lastAccessed: "Hari ini",
-    color: "#7C3AED",
-    bg: "#F5F3FF",
+    accent: "#7C3AED",
+    bgSoft: "#F5F3FF",
   },
 ];
 
-const recommendedCourses = [
+const suggestedLearningList = [
   {
     id: 1,
     title: "Belajar Tableau dari Nol",
@@ -48,8 +52,8 @@ const recommendedCourses = [
     duration: "4.5 jam",
     rating: 4.8,
     badge: "Direkomendasikan AI",
-    badgeColor: "bg-indigo-100 text-indigo-700",
-    color: "#4F46E5",
+    badgeStyle: "bg-indigo-100 text-indigo-700",
+    accent: "#4F46E5",
   },
   {
     id: 2,
@@ -59,298 +63,448 @@ const recommendedCourses = [
     duration: "12 jam",
     rating: 4.9,
     badge: "Populer",
-    badgeColor: "bg-green-100 text-green-700",
-    color: "#10B981",
-  },
-  {
-    id: 3,
-    title: "Python untuk Data Science",
-    category: "Pemrograman",
-    platform: "Dicoding",
-    duration: "15 jam",
-    rating: 4.7,
-    badge: "",
-    color: "#F59E0B",
-  },
-  {
-    id: 4,
-    title: "Advanced SQL & Database",
-    category: "Database",
-    platform: "Udacity",
-    duration: "8 jam",
-    rating: 4.6,
-    badge: "",
-    color: "#EF4444",
-  },
-  {
-    id: 5,
-    title: "Statistics for Data Science",
-    category: "Matematika",
-    platform: "edX",
-    duration: "20 jam",
-    rating: 4.8,
-    badge: "Direkomendasikan AI",
-    badgeColor: "bg-indigo-100 text-indigo-700",
-    color: "#025CB8",
-  },
-  {
-    id: 6,
-    title: "Storytelling with Data",
-    category: "Komunikasi",
-    platform: "Skillshare",
-    duration: "3 jam",
-    rating: 4.9,
-    badge: "Populer",
-    badgeColor: "bg-green-100 text-green-700",
-    color: "#8B5CF6",
+    badgeStyle: "bg-green-100 text-green-700",
+    accent: "#10B981",
   },
 ];
 
-const mockUser = {
-  name: "Budi Santoso",
-  email: "budi.santoso@example.com",
-  targetRole: "Data Analyst",
-  experienceLevel: "Junior (1-3 tahun)",
-  skills: ["Python", "SQL", "Excel", "Data Analysis", "Communication"],
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// COMPONENTS
-// ─────────────────────────────────────────────────────────────────────────────
-const ProgressBar = ({ value, color = "#025CB8" }: { value: number; color?: string }) => (
-  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+// progress kecil
+const ProgressLine = ({
+  percentage,
+  accent = "#025CB8",
+}: {
+  percentage: number;
+  accent?: string;
+}) => (
+  <div className="w-full h-2 overflow-hidden rounded-full bg-gray-100">
     <div
-      className="h-full rounded-full transition-all duration-700 ease-out"
-      style={{ width: `${value}%`, background: color }}
+      className="h-full rounded-full transition-all duration-500"
+      style={{
+        width: `${percentage}%`,
+        background: accent,
+      }}
     />
   </div>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE
-// ─────────────────────────────────────────────────────────────────────────────
+// "Budi Santoso" => BS
+const makeInitialAvatar = (fullName: string) =>
+  fullName
+    .trim()
+    .split(" ")
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+
 const ProfilKursus = () => {
-  const [activeTab, setActiveTab] = useState<"progress" | "profil">("progress");
+  const [currentTab, setCurrentTab] = useState<"progress" | "profil">(
+    "progress"
+  );
 
-  // Form states
-  const [name, setName] = useState(mockUser.name);
-  const [targetRole, setTargetRole] = useState(mockUser.targetRole);
-  const [expLevel, setExpLevel] = useState(mockUser.experienceLevel);
-  const [skills, setSkills] = useState(mockUser.skills);
-  const [newSkill, setNewSkill] = useState("");
+  const [sidebarMini, setSidebarMini] = useState(false);
 
-  const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && newSkill.trim() !== "") {
-      e.preventDefault();
-      if (!skills.includes(newSkill.trim())) {
-        setSkills([...skills, newSkill.trim()]);
+  // api state
+  const [profileDetail, setProfileDetail] =
+    useState<UserWithProfile | null>(null);
+
+  const [isFetchingProfile, setIsFetchingProfile] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showSavedAlert, setShowSavedAlert] = useState(false);
+
+  // form state
+  const [fullName, setFullName] = useState("");
+  const [careerTarget, setCareerTarget] = useState("");
+
+  const [experienceTier, setExperienceTier] = useState(
+    "Fresh Graduate (0-1 tahun)"
+  );
+
+  const [skillCollection, setSkillCollection] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        setIsFetchingProfile(true);
+
+        const profileResponse = await getProfileService();
+        const currentUser = profileResponse.user;
+
+        setProfileDetail(currentUser);
+
+        setFullName(currentUser.name ?? "");
+        setCareerTarget(currentUser.profile?.targetRole ?? "");
+
+        setExperienceTier(
+          currentUser.profile?.experienceLevel ??
+            "Fresh Graduate (0-1 tahun)"
+        );
+
+        setSkillCollection(currentUser.profile?.skills ?? []);
+      } catch (fetchErr: any) {
+        console.error("profile error:", fetchErr);
+
+        setErrorMessage(
+          "Profil gagal dimuat. Coba refresh halaman ya."
+        );
+      } finally {
+        setIsFetchingProfile(false);
       }
-      setNewSkill("");
+    };
+
+    loadProfile();
+  }, []);
+
+  const handleSkillInput = (
+    keyboardEvent: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    const cleanSkill = skillInput.trim();
+
+    if (keyboardEvent.key !== "Enter" || !cleanSkill) return;
+
+    keyboardEvent.preventDefault();
+
+    setSkillCollection((prevSkill) =>
+      prevSkill.includes(cleanSkill)
+        ? prevSkill
+        : [...prevSkill, cleanSkill]
+    );
+
+    setSkillInput("");
+  };
+
+  const removeSkillTag = (deletedSkill: string) => {
+    setSkillCollection((prevSkill) =>
+      prevSkill.filter((skillName) => skillName !== deletedSkill)
+    );
+  };
+
+  const restoreForm = () => {
+    if (!profileDetail) return;
+
+    setFullName(profileDetail.name ?? "");
+    setCareerTarget(profileDetail.profile?.targetRole ?? "");
+
+    setExperienceTier(
+      profileDetail.profile?.experienceLevel ??
+        "Fresh Graduate (0-1 tahun)"
+    );
+
+    setSkillCollection(profileDetail.profile?.skills ?? []);
+
+    setErrorMessage("");
+  };
+
+  const saveProfileChanges = async () => {
+    if (!fullName.trim()) {
+      setErrorMessage("Nama wajib diisi");
+      return;
+    }
+
+    setErrorMessage("");
+    setShowSavedAlert(false);
+    setIsSubmitting(true);
+
+    try {
+      const requestBody: UpdateProfilePayload = {
+        name: fullName.trim(),
+        targetRole: careerTarget || undefined,
+        experienceLevel: experienceTier || undefined,
+        skills: skillCollection,
+      };
+
+      const updatedProfile = await updateProfileService(requestBody);
+
+      setProfileDetail(updatedProfile.user);
+      setShowSavedAlert(true);
+
+      window.setTimeout(() => {
+        setShowSavedAlert(false);
+      }, 3000);
+    } catch (saveErr: any) {
+      setErrorMessage(
+        saveErr?.response?.data?.message ||
+          "Profil gagal disimpan. Coba lagi."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleRemoveSkill = (skillToRemove: string) => {
-    setSkills(skills.filter((s) => s !== skillToRemove));
-  };
+  const dashboardStats = useMemo(
+    () => ({
+      active:
+        profileDetail?.profile?.activeCourses ??
+        enrolledCourseList.length,
 
-  const [collapsed, setCollapsed] = useState(false);
+      completed:
+        profileDetail?.profile?.completedCourses ?? 5,
+
+      hours:
+        profileDetail?.profile?.totalHours ?? 34,
+
+      streak:
+        profileDetail?.profile?.streakDays ?? 7,
+    }),
+    [profileDetail]
+  );
+
+  if (isFetchingProfile) {
+    return (
+      <div className="min-h-screen bg-[#F7F9FC]">
+        <Sidebar
+          collapsed={sidebarMini}
+          setCollapsed={setSidebarMini}
+        />
+
+        <div
+          className={`min-h-screen flex items-center justify-center transition-all duration-300 ${
+            sidebarMini ? "lg:ml-[90px]" : "lg:ml-[260px]"
+          }`}
+        >
+          <div className="flex flex-col items-center gap-3">
+            <Loader2
+              size={32}
+              className="animate-spin text-[#025CB8]"
+            />
+
+            <p className="text-sm text-gray-500">
+              Memuat profil...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
       <Sidebar
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
+        collapsed={sidebarMini}
+        setCollapsed={setSidebarMini}
       />
-      <div
-        className={`pb-24 lg:pb-10 transition-all duration-300 ${collapsed ? "lg:ml-[90px]" : "lg:ml-[260px]"
-          }`}
-      >
 
-        {/* ── HEADER ──────────────────────────────────────────────────────── */}
-        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-5 lg:px-8 py-4">
-          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div
+        className={`pb-24 lg:pb-10 transition-all duration-300 ${
+          sidebarMini ? "lg:ml-[90px]" : "lg:ml-[260px]"
+        }`}
+      >
+        {/* top */}
+        <div className="sticky top-0 z-30 border-b border-gray-100 bg-white/80 px-5 py-4 backdrop-blur-md lg:px-8">
+          <div className="mx-auto flex max-w-5xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <BookOpen className="text-[#025CB8]" size={20} />
+              <h1 className="flex items-center gap-2 text-lg font-bold text-gray-800">
+                <BookOpen
+                  className="text-[#025CB8]"
+                  size={20}
+                />
+
                 Progress Skill & Kursus Kamu
               </h1>
-              <p className="text-sm text-gray-400 mt-0.5">
-                Pantau perkembangan belajarmu dan temukan kursus baru
+
+              <p className="mt-0.5 text-sm text-gray-400">
+                Pantau perkembangan belajar dan cari course baru
               </p>
             </div>
 
-            {/* Tabs Selector */}
-            <div className="flex p-1 bg-gray-100 rounded-xl self-start sm:self-auto">
-              <button
-                onClick={() => setActiveTab("progress")}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${activeTab === "progress"
-                  ? "bg-white text-[#025CB8] shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
-              >
-                Progress Kursus
-              </button>
-              <button
-                onClick={() => setActiveTab("profil")}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${activeTab === "profil"
-                  ? "bg-white text-[#025CB8] shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
-              >
-                Profil Saya
-              </button>
+            <div className="flex self-start rounded-xl bg-gray-100 p-1 sm:self-auto">
+              {["progress", "profil"].map((tabName) => {
+                const isActive = currentTab === tabName;
+
+                return (
+                  <button
+                    key={tabName}
+                    onClick={() =>
+                      setCurrentTab(
+                        tabName as "progress" | "profil"
+                      )
+                    }
+                    className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${
+                      isActive
+                        ? "bg-white text-[#025CB8] shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {tabName === "progress"
+                      ? "Progress Kursus"
+                      : "Profil Saya"}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* ── CONTENT AREA ────────────────────────────────────────────────── */}
-        <div className="max-w-5xl mx-auto px-5 lg:px-8 pt-6 space-y-8">
-
-          {activeTab === "progress" ? (
+        <div className="mx-auto max-w-5xl space-y-8 px-5 pt-6 lg:px-8">
+          {currentTab === "progress" ? (
             <>
-              {/* ── STATS CARDS ──────────────────────────────────────────────── */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                    <PlayCircle size={24} className="text-[#025CB8]" />
+              {/* stat */}
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
+                    <PlayCircle
+                      size={24}
+                      className="text-[#025CB8]"
+                    />
                   </div>
+
                   <div>
-                    <p className="text-xs text-gray-400 font-medium">Kursus Aktif</p>
-                    <p className="text-2xl font-black text-gray-800">2</p>
+                    <p className="text-xs font-medium text-gray-400">
+                      Kursus Aktif
+                    </p>
+
+                    <p className="text-2xl font-black text-gray-800">
+                      {dashboardStats.active}
+                    </p>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-                    <Award size={24} className="text-green-600" />
+                <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50">
+                    <Award
+                      size={24}
+                      className="text-green-600"
+                    />
                   </div>
+
                   <div>
-                    <p className="text-xs text-gray-400 font-medium">Kursus Selesai</p>
-                    <p className="text-2xl font-black text-gray-800">5</p>
+                    <p className="text-xs font-medium text-gray-400">
+                      Kursus Selesai
+                    </p>
+
+                    <p className="text-2xl font-black text-gray-800">
+                      {dashboardStats.completed}
+                    </p>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
-                    <Clock size={24} className="text-purple-600" />
+                <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50">
+                    <Clock
+                      size={24}
+                      className="text-purple-600"
+                    />
                   </div>
+
                   <div>
-                    <p className="text-xs text-gray-400 font-medium">Total Jam Belajar</p>
-                    <p className="text-2xl font-black text-gray-800">34<span className="text-sm font-bold text-gray-500"> jam</span></p>
+                    <p className="text-xs font-medium text-gray-400">
+                      Total Jam
+                    </p>
+
+                    <p className="text-2xl font-black text-gray-800">
+                      {dashboardStats.hours}
+                      <span className="ml-1 text-sm font-bold text-gray-500">
+                        jam
+                      </span>
+                    </p>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4"
-                  style={{ background: "linear-gradient(135deg, #FFF7ED, #FFEDD5)" }}>
-                  <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <Flame size={24} className="text-orange-500" />
+                <div
+                  className="flex items-center gap-4 rounded-2xl border border-gray-100 p-5 shadow-sm"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #FFF7ED, #FFEDD5)",
+                  }}
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100">
+                    <Flame
+                      size={24}
+                      className="text-orange-500"
+                    />
                   </div>
+
                   <div>
-                    <p className="text-xs text-orange-600/70 font-bold uppercase tracking-wider">Streak Belajar</p>
-                    <p className="text-xl font-black text-orange-600 mt-0.5">7 hari 🔥</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-orange-600/70">
+                      Streak
+                    </p>
+
+                    <p className="mt-0.5 text-xl font-black text-orange-600">
+                      {dashboardStats.streak} hari 🔥
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* ── ACTIVE COURSES ────────────────────────────────────────────── */}
+              {/* course aktif */}
               <div>
-                <h2 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <PlayCircle size={18} className="text-[#025CB8]" />
+                <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-800">
+                  <PlayCircle
+                    size={18}
+                    className="text-[#025CB8]"
+                  />
+
                   Kursus Aktif Saya
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {activeCourses.map(course => (
-                    <div key={course.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  {enrolledCourseList.map((courseInfo) => (
+                    <div
+                      key={courseInfo.id}
+                      className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                    >
                       <div className="flex gap-4">
-                        {/* Thumbnail */}
-                        <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: course.bg, color: course.color }}>
+                        <div
+                          className="flex h-16 w-16 items-center justify-center rounded-xl"
+                          style={{
+                            backgroundColor: courseInfo.bgSoft,
+                            color: courseInfo.accent,
+                          }}
+                        >
                           <BookOpen size={28} />
                         </div>
 
-                        {/* Info */}
                         <div className="flex-1">
-                          <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-500 mb-1">
-                            {course.platform}
+                          <span className="mb-1 inline-block rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
+                            {courseInfo.platform}
                           </span>
-                          <h3 className="font-bold text-gray-800 leading-tight mb-2">{course.title}</h3>
 
-                          {/* Progress */}
-                          <div className="flex items-center justify-between text-xs font-bold mb-1">
-                            <span className="text-gray-500">Progress</span>
-                            <span style={{ color: course.color }}>{course.progress}% selesai</span>
+                          <h3 className="mb-2 font-bold leading-tight text-gray-800">
+                            {courseInfo.title}
+                          </h3>
+
+                          <div className="mb-1 flex items-center justify-between text-xs font-bold">
+                            <span className="text-gray-500">
+                              Progress
+                            </span>
+
+                            <span
+                              style={{
+                                color: courseInfo.accent,
+                              }}
+                            >
+                              {courseInfo.progress}% selesai
+                            </span>
                           </div>
-                          <ProgressBar value={course.progress} color={course.color} />
-                          <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1">
+
+                          <ProgressLine
+                            percentage={courseInfo.progress}
+                            accent={courseInfo.accent}
+                          />
+
+                          <p className="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400">
                             <Clock size={10} />
-                            Terakhir diakses: {course.lastAccessed}
+
+                            Terakhir diakses:
+                            {courseInfo.lastAccessed}
                           </p>
                         </div>
                       </div>
 
                       <div className="mt-5 flex justify-end">
-                        <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-sm hover:-translate-y-0.5 transition-transform"
-                          style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
+                        <button
+                          className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #025CB8, #62AAEA)",
+                          }}
+                        >
                           Lanjutkan Belajar
+
                           <ArrowRight size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── RECOMMENDED COURSES ───────────────────────────────────────── */}
-              <div>
-                <div className="mb-5">
-                  <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                    <Target size={18} className="text-[#025CB8]" />
-                    Kursus yang Direkomendasikan AI
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">Berdasarkan skill gap kamu sebagai calon {mockUser.targetRole}</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {recommendedCourses.map(course => (
-                    <div key={course.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition-all group cursor-pointer flex flex-col">
-                      {/* Thumbnail Placeholder */}
-                      <div className="h-32 w-full flex items-center justify-center relative"
-                        style={{ backgroundColor: `${course.color}15` }}>
-                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white shadow-sm"
-                          style={{ color: course.color }}>
-                          <BookOpen size={24} />
-                        </div>
-                        {course.badge && (
-                          <div className={`absolute top-3 left-3 px-2 py-1 rounded-lg text-[10px] font-bold shadow-sm ${course.badgeColor}`}>
-                            {course.badge}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-4 flex flex-col flex-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                          {course.category}
-                        </span>
-                        <h3 className="font-bold text-gray-800 text-sm leading-tight mb-3 group-hover:text-[#025CB8] transition-colors">
-                          {course.title}
-                        </h3>
-
-                        <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-600">{course.platform}</span>
-                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                              <Clock size={10} /> {course.duration}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded text-amber-600 text-xs font-bold">
-                            <Star size={12} className="fill-amber-500" />
-                            {course.rating}
-                          </div>
-                        </div>
-
-                        <button className="w-full mt-4 py-2 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 group-hover:bg-[#025CB8] group-hover:text-white group-hover:border-[#025CB8] transition-colors">
-                          Lihat Kursus
                         </button>
                       </div>
                     </div>
@@ -359,119 +513,237 @@ const ProfilKursus = () => {
               </div>
             </>
           ) : (
-            /* ── PROFIL SAYA ──────────────────────────────────────────────── */
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="mx-auto max-w-2xl">
+              <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
                 <div className="p-6 sm:p-8">
-                  <h2 className="text-xl font-bold text-gray-800 mb-6 border-b border-gray-100 pb-4">Edit Profil Saya</h2>
+                  <h2 className="mb-6 border-b border-gray-100 pb-4 text-xl font-bold text-gray-800">
+                    Edit Profil Saya
+                  </h2>
 
-                  {/* Avatar Section */}
-                  <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
+                  {showSavedAlert && (
+                    <div className="mb-5 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                      <CheckCircle2 size={16} />
+
+                      Profil berhasil disimpan!
+                    </div>
+                  )}
+
+                  {!!errorMessage && (
+                    <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                      {errorMessage}
+                    </div>
+                  )}
+
+                  {/* avatar */}
+                  <div className="mb-8 flex flex-col items-center gap-6 sm:flex-row">
                     <div className="relative">
-                      <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl text-white font-bold shadow-md"
-                        style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
-                        BS
-                      </div>
-                      <button className="absolute bottom-0 right-0 w-8 h-8 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-[#025CB8] hover:border-blue-200 shadow-sm transition-colors">
+                      {profileDetail?.profile?.avatarUrl ? (
+                        <img
+                          src={profileDetail.profile.avatarUrl}
+                          alt="Avatar"
+                          className="h-24 w-24 rounded-full object-cover shadow-md"
+                        />
+                      ) : (
+                        <div
+                          className="flex h-24 w-24 items-center justify-center rounded-full text-3xl font-bold text-white shadow-md"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, #025CB8, #62AAEA)",
+                          }}
+                        >
+                          {makeInitialAvatar(
+                            fullName ||
+                              profileDetail?.name ||
+                              "U"
+                          )}
+                        </div>
+                      )}
+
+                      <button className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-200 hover:text-[#025CB8]">
                         <Camera size={14} />
                       </button>
                     </div>
+
                     <div className="text-center sm:text-left">
-                      <h3 className="font-bold text-gray-800">{name}</h3>
-                      <p className="text-sm text-gray-500 mb-2">{targetRole}</p>
-                      <button className="text-xs font-semibold text-[#025CB8] bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
-                        Ubah Foto Profil
-                      </button>
+                      <h3 className="text-lg font-bold text-gray-800">
+                        {fullName}
+                      </h3>
+
+                      <p className="mb-1 text-sm text-gray-500">
+                        {profileDetail?.email}
+                      </p>
+
+                      <p className="text-sm font-medium text-[#025CB8]">
+                        {careerTarget || "Belum diisi"}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Form */}
+                  {/* form */}
                   <div className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                       <div>
-                        <label className="block text-xs font-bold text-gray-600 mb-1.5">Nama Lengkap</label>
+                        <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                          Nama Lengkap
+                        </label>
+
                         <input
                           type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#025CB8] transition-all bg-gray-50 focus:bg-white"
+                          value={fullName}
+                          onChange={(e) =>
+                            setFullName(e.target.value)
+                          }
+                          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-[#025CB8] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                         />
                       </div>
+
                       <div>
-                        <label className="block text-xs font-bold text-gray-600 mb-1.5">Email (Read-only)</label>
+                        <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                          Email
+                        </label>
+
                         <input
                           type="email"
-                          value={mockUser.email}
                           readOnly
-                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 bg-gray-100 cursor-not-allowed"
+                          value={profileDetail?.email ?? ""}
+                          className="w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-100 px-4 py-2.5 text-sm text-gray-500"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                       <div>
-                        <label className="block text-xs font-bold text-gray-600 mb-1.5">Posisi yang Diincar</label>
+                        <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                          Posisi yang Diincar
+                        </label>
+
                         <input
                           type="text"
-                          value={targetRole}
-                          onChange={(e) => setTargetRole(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#025CB8] transition-all bg-gray-50 focus:bg-white"
+                          value={careerTarget}
+                          onChange={(e) =>
+                            setCareerTarget(e.target.value)
+                          }
+                          placeholder="Contoh: Data Analyst"
+                          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-[#025CB8] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                         />
                       </div>
+
                       <div>
-                        <label className="block text-xs font-bold text-gray-600 mb-1.5">Level Pengalaman</label>
+                        <label className="mb-1.5 block text-xs font-bold text-gray-600">
+                          Level Pengalaman
+                        </label>
+
                         <select
-                          value={expLevel}
-                          onChange={(e) => setExpLevel(e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#025CB8] transition-all bg-gray-50 focus:bg-white appearance-none"
+                          value={experienceTier}
+                          onChange={(e) =>
+                            setExperienceTier(
+                              e.target.value
+                            )
+                          }
+                          className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-[#025CB8] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                         >
-                          <option value="Fresh Graduate (0-1 tahun)">Fresh Graduate (0-1 tahun)</option>
-                          <option value="Junior (1-3 tahun)">Junior (1-3 tahun)</option>
-                          <option value="Mid (3-5 tahun)">Mid (3-5 tahun)</option>
-                          <option value="Senior (5+ tahun)">Senior (5+ tahun)</option>
+                          <option>
+                            Fresh Graduate (0-1 tahun)
+                          </option>
+
+                          <option>
+                            Junior (1-3 tahun)
+                          </option>
+
+                          <option>
+                            Mid (3-5 tahun)
+                          </option>
+
+                          <option>Senior (5+ tahun)</option>
                         </select>
                       </div>
                     </div>
 
+                    {/* skill */}
                     <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1.5">
+                      <label className="mb-1.5 block text-xs font-bold text-gray-600">
                         Skill yang Dimiliki
+
+                        <span className="ml-1 font-normal text-gray-400">
+                          (tekan enter)
+                        </span>
                       </label>
-                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:border-[#025CB8] focus-within:ring-2 focus-within:ring-blue-100 transition-all flex flex-wrap gap-2">
-                        {skills.map(skill => (
-                          <span key={skill} className="flex items-center gap-1 bg-white border border-gray-200 px-2 py-1 rounded-lg text-xs font-bold text-gray-700 shadow-sm">
-                            {skill}
-                            <button onClick={() => handleRemoveSkill(skill)} className="text-gray-400 hover:text-red-500 transition-colors">
+
+                      <div className="flex min-h-[48px] flex-wrap gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 transition-all focus-within:border-[#025CB8] focus-within:ring-2 focus-within:ring-blue-100">
+                        {skillCollection.map((skillName) => (
+                          <span
+                            key={skillName}
+                            className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 shadow-sm"
+                          >
+                            {skillName}
+
+                            <button
+                              onClick={() =>
+                                removeSkillTag(skillName)
+                              }
+                              className="text-gray-400 transition-colors hover:text-red-500"
+                            >
                               <X size={12} />
                             </button>
                           </span>
                         ))}
+
                         <input
                           type="text"
-                          value={newSkill}
-                          onChange={(e) => setNewSkill(e.target.value)}
-                          onKeyDown={handleAddSkill}
-                          placeholder="Ketik skill & tekan Enter"
-                          className="flex-1 min-w-[120px] bg-transparent text-sm text-gray-700 focus:outline-none"
+                          value={skillInput}
+                          onChange={(e) =>
+                            setSkillInput(e.target.value)
+                          }
+                          onKeyDown={handleSkillInput}
+                          placeholder={
+                            skillCollection.length
+                              ? ""
+                              : "Tambah skill lalu enter"
+                          }
+                          className="min-w-[120px] flex-1 bg-transparent text-sm text-gray-700 focus:outline-none"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6 sm:p-8 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
-                  <button className="px-5 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors">
+                {/* btn bawah */}
+                <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 p-6 sm:p-8">
+                  <button
+                    onClick={restoreForm}
+                    className="rounded-xl px-5 py-2.5 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-200"
+                  >
                     Batal
                   </button>
-                  <button className="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-md hover:-translate-y-0.5 transition-all"
-                    style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}>
-                    Simpan Perubahan
+
+                  <button
+                    disabled={isSubmitting}
+                    onClick={saveProfileChanges}
+                    className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #025CB8, #62AAEA)",
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2
+                          size={15}
+                          className="animate-spin"
+                        />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={15} />
+                        Simpan Perubahan
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>

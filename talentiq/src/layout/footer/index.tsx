@@ -1,10 +1,7 @@
-// src/layout/footer/index.tsx
 import { Link } from "react-router-dom";
-import {
-  FaInstagram,
-  FaLinkedin,
-} from "react-icons/fa";
+import { FaInstagram, FaLinkedin } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+
 import {
   ArrowRight,
   BrainCircuit,
@@ -13,54 +10,79 @@ import {
   Phone,
 } from "lucide-react";
 
-import logofooter from "@/assets/logofooter.png";
+import footerLogo from "@/assets/logofooter.png";
+
+const mainMenus = [
+  { text: "Beranda", href: "/" },
+  { text: "Analisis Skill", href: "/analisis-skill" },
+  { text: "Jalur Karir", href: "/jalur-karir" },
+  { text: "Lowongan Kerja", href: "/lowongan-kerja" },
+];
+
+const companyMenus = [
+  { text: "Tentang Kami", href: "/" },
+  { text: "Blog", href: "/" },
+  { text: "Kontak", href: "/" },
+  { text: "Privacy Policy", href: "/" },
+];
+
+const socialMediaList = [
+  {
+    title: "Instagram",
+    url: "#",
+    icon: <FaInstagram size={18} />,
+  },
+  {
+    title: "Twitter X",
+    url: "#",
+    icon: <FaXTwitter size={18} />,
+  },
+  {
+    title: "LinkedIn",
+    url: "#",
+    icon: <FaLinkedin size={18} />,
+  },
+];
+
+const contactInfo = [
+  {
+    title: "Email",
+    value: "support@talentiq-ai.com",
+    icon: <Mail size={16} />,
+  },
+  {
+    title: "Telepon",
+    value: "+62 812-3456-7890",
+    icon: <Phone size={16} />,
+  },
+  {
+    title: "Lokasi",
+    value: "Indonesia Digital Innovation Center",
+    icon: <MapPin size={16} />,
+  },
+];
+
+const footerLinks = [
+  "Kebijakan Privasi",
+  "Ketentuan Layanan",
+  "Komunitas",
+];
 
 const FooterComponent = () => {
-  const platformLinks = [
-    { label: "Beranda", path: "/" },
-    { label: "Analisis Skill", path: "/analisis-skill" },
-    { label: "Jalur Karir", path: "/jalur-karir" },
-    { label: "Lowongan Kerja", path: "/lowongan-kerja" },
-  ];
-
-  const companyLinks = [
-    { label: "Tentang Kami", path: "/" },
-    { label: "Blog", path: "/" },
-    { label: "Kontak", path: "/" },
-    { label: "Privacy Policy", path: "/" },
-  ];
-
-  const socialLinks = [
-    {
-      icon: <FaInstagram size={18} />,
-      href: "#",
-      label: "Instagram",
-    },
-    {
-      icon: <FaXTwitter size={18} />,
-      href: "#",
-      label: "X (Twitter)",
-    },
-    {
-      icon: <FaLinkedin size={18} />,
-      href: "#",
-      label: "LinkedIn",
-    },
-  ];
-
   return (
     <footer className="relative overflow-hidden bg-[#061C3D] text-white">
-      {/* Background Blur */}
-      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-[#025CB8]/20 rounded-full blur-[120px]" />
-      <div className="absolute bottom-0 right-0 w-[350px] h-[350px] bg-[#62AAEA]/10 rounded-full blur-[120px]" />
+
+      {/* bg blur biar ga flat */}
+      <div className="absolute left-0 top-0 h-[400px] w-[400px] rounded-full bg-[#025CB8]/20 blur-[120px]" />
+      <div className="absolute bottom-0 right-0 h-[350px] w-[350px] rounded-full bg-[#62AAEA]/10 blur-[120px]" />
 
       <div className="relative z-10">
 
-        {/* ───────────────── CTA SECTION ───────────────── */}
-        <div className="px-4 sm:px-8 lg:px-[50px] pt-16">
+        {/* top cta */}
+        <section className="px-4 pt-16 sm:px-8 lg:px-[50px]">
           <div
             className="
-              max-w-7xl mx-auto
+              mx-auto max-w-7xl
               rounded-[32px]
               border border-white/10
               bg-gradient-to-r from-[#025CB8] to-[#62AAEA]
@@ -69,42 +91,46 @@ const FooterComponent = () => {
               flex flex-col lg:flex-row items-center gap-10
             "
           >
-            {/* LEFT */}
+
             <div className="flex-1">
-              <div className="inline-flex items-center gap-2 bg-white/15 px-3 py-1.5 rounded-full mb-5">
+
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5">
                 <BrainCircuit size={14} className="text-white" />
+
                 <span className="text-xs font-bold text-white/90">
                   AI Career Intelligence
                 </span>
               </div>
 
-              <h2 className="text-3xl sm:text-4xl font-black leading-tight mb-4">
+              <h2 className="mb-4 text-3xl font-black leading-tight sm:text-4xl">
                 Bangun Karir Digitalmu
+
                 <span className="block text-blue-100">
                   Bersama TalentIQ AI
                 </span>
               </h2>
 
-              <p className="text-white/80 leading-8 max-w-2xl">
-                Analisis skill, roadmap karir personal, dan rekomendasi
-                lowongan kerja berbasis AI untuk membantu kamu berkembang
-                lebih cepat di industri teknologi.
+              <p className="max-w-2xl leading-8 text-white/80">
+                Analisis skill, roadmap karir personal, sampai rekomendasi
+                lowongan berbasis AI buat bantu kamu berkembang lebih cepat
+                di dunia teknologi.
               </p>
             </div>
 
-            {/* RIGHT */}
-            <div className="w-full lg:w-auto flex flex-col gap-4">
+            <div className="flex w-full flex-col gap-4 lg:w-auto">
+
               <Link
                 to="/analisis-skill"
                 className="
-                  bg-white text-[#025CB8]
-                  hover:bg-gray-100
-                  font-bold
-                  px-7 py-4
-                  rounded-2xl
                   flex items-center justify-center gap-2
+                  rounded-2xl
+                  bg-white px-7 py-4
+                  font-bold text-[#025CB8]
+                  shadow-lg
                   transition-all duration-300
-                  shadow-lg hover:shadow-2xl hover:-translate-y-1
+                  hover:-translate-y-1
+                  hover:bg-gray-100
+                  hover:shadow-2xl
                 "
               >
                 Mulai Analisis Skill
@@ -114,210 +140,186 @@ const FooterComponent = () => {
               <Link
                 to="/jalur-karir"
                 className="
-                  bg-white/10 backdrop-blur-md
-                  border border-white/20
-                  hover:bg-white/20
-                  text-white font-bold
-                  px-7 py-4 rounded-2xl
                   flex items-center justify-center gap-2
+                  rounded-2xl
+                  border border-white/20
+                  bg-white/10 px-7 py-4
+                  font-bold text-white
+                  backdrop-blur-md
                   transition-all duration-300
+                  hover:bg-white/20
                 "
               >
                 Lihat Jalur Karir
               </Link>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* ───────────────── MAIN FOOTER ───────────────── */}
-        <div className="px-4 sm:px-8 lg:px-[50px] pt-16 pb-8">
-          <div className="max-w-7xl mx-auto">
+        {/* footer utama */}
+        <section className="px-4 pb-8 pt-16 sm:px-8 lg:px-[50px]">
 
-            {/* GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-12">
+          <div className="mx-auto max-w-7xl">
 
-              {/* BRAND */}
+            <div className="grid grid-cols-1 gap-12 pb-12 md:grid-cols-2 lg:grid-cols-4">
+
+              {/* brand */}
               <div>
+
                 <Link to="/">
                   <img
-                    src={logofooter}
+                    src={footerLogo}
                     alt="TalentIQ AI"
-                    className="h-[42px] object-contain mb-6"
+                    className="mb-6 h-[42px] object-contain"
                   />
                 </Link>
 
-                <p className="text-white/70 text-sm leading-8 mb-6">
-                  Platform AI modern untuk membantu generasi digital
-                  memahami potensi skill, menentukan arah karir,
-                  dan menemukan peluang kerja terbaik.
+                <p className="mb-6 text-sm leading-8 text-white/70">
+                  Platform AI modern buat bantu generasi digital memahami
+                  potensi skill, menentukan arah karir, dan cari peluang kerja
+                  yang lebih relevan.
                 </p>
 
-                {/* Social */}
                 <div className="flex items-center gap-3">
-                  {socialLinks.map(({ icon, href, label }) => (
+                  {socialMediaList.map((socialAccount) => (
                     <a
-                      key={label}
-                      href={href}
-                      aria-label={label}
+                      key={socialAccount.title}
+                      href={socialAccount.url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={socialAccount.title}
                       className="
-                        w-11 h-11 rounded-xl
-                        bg-white/10
+                        flex h-11 w-11 items-center justify-center
+                        rounded-xl
                         border border-white/10
-                        flex items-center justify-center
+                        bg-white/10
                         text-white/80
+                        transition-all duration-300
                         hover:bg-[#025CB8]
                         hover:text-white
-                        transition-all duration-300
                       "
                     >
-                      {icon}
+                      {socialAccount.icon}
                     </a>
                   ))}
                 </div>
               </div>
 
-              {/* PLATFORM */}
+              {/* platform */}
               <div>
-                <h3 className="text-lg font-bold mb-6">
+                <h3 className="mb-6 text-lg font-bold">
                   Platform
                 </h3>
 
                 <div className="flex flex-col gap-4">
-                  {platformLinks.map((item) => (
+                  {mainMenus.map((menu) => (
                     <Link
-                      key={item.label}
-                      to={item.path}
+                      key={menu.text}
+                      to={menu.href}
                       className="
-                        text-white/70
-                        hover:text-white
+                        text-sm text-white/70
                         transition-colors duration-200
-                        text-sm
+                        hover:text-white
                       "
                     >
-                      {item.label}
+                      {menu.text}
                     </Link>
                   ))}
                 </div>
               </div>
 
-              {/* COMPANY */}
+              {/* perusahaan */}
               <div>
-                <h3 className="text-lg font-bold mb-6">
+                <h3 className="mb-6 text-lg font-bold">
                   Perusahaan
                 </h3>
 
                 <div className="flex flex-col gap-4">
-                  {companyLinks.map((item) => (
+                  {companyMenus.map((companyMenu) => (
                     <Link
-                      key={item.label}
-                      to={item.path}
+                      key={companyMenu.text}
+                      to={companyMenu.href}
                       className="
-                        text-white/70
-                        hover:text-white
+                        text-sm text-white/70
                         transition-colors duration-200
-                        text-sm
+                        hover:text-white
                       "
                     >
-                      {item.label}
+                      {companyMenu.text}
                     </Link>
                   ))}
                 </div>
               </div>
 
-              {/* CONTACT */}
+              {/* kontak */}
               <div>
-                <h3 className="text-lg font-bold mb-6">
+                <h3 className="mb-6 text-lg font-bold">
                   Hubungi Kami
                 </h3>
 
                 <div className="flex flex-col gap-5">
 
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                      <Mail size={16} />
-                    </div>
+                  {contactInfo.map((contactRow) => (
+                    <div
+                      key={contactRow.title}
+                      className="flex items-start gap-3"
+                    >
 
-                    <div>
-                      <p className="text-xs text-white/40 mb-1">
-                        Email
-                      </p>
-                      <p className="text-sm text-white/80">
-                        support@talentiq-ai.com
-                      </p>
-                    </div>
-                  </div>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                        {contactRow.icon}
+                      </div>
 
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                      <Phone size={16} />
-                    </div>
+                      <div>
+                        <p className="mb-1 text-xs text-white/40">
+                          {contactRow.title}
+                        </p>
 
-                    <div>
-                      <p className="text-xs text-white/40 mb-1">
-                        Telepon
-                      </p>
-                      <p className="text-sm text-white/80">
-                        +62 812-3456-7890
-                      </p>
+                        <p
+                          className={`
+                            text-sm text-white/80
+                            ${contactRow.title === "Lokasi" ? "leading-6" : ""}
+                          `}
+                        >
+                          {contactRow.value}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                      <MapPin size={16} />
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-white/40 mb-1">
-                        Lokasi
-                      </p>
-                      <p className="text-sm text-white/80 leading-6">
-                        Indonesia Digital Innovation Center
-                      </p>
-                    </div>
-                  </div>
+                  ))}
 
                 </div>
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="w-full h-px bg-white/10 mb-6" />
+            {/* garis */}
+            <div className="mb-6 h-px w-full bg-white/10" />
 
-            {/* Bottom */}
-            <div className="flex flex-col lg:flex-row items-center gap-5">
+            {/* footer bawah */}
+            <div className="flex flex-col items-center gap-5 lg:flex-row">
 
-              <p className="text-white/50 text-sm text-center lg:text-left">
+              <p className="text-center text-sm text-white/50 lg:text-left">
                 © 2026 TalentIQ AI Platform. Seluruh hak cipta dilindungi.
               </p>
 
-              <div className="hidden lg:block flex-1" />
+              <div className="hidden flex-1 lg:block" />
 
               <div className="flex flex-wrap items-center justify-center gap-5">
-                {[
-                  "Kebijakan Privasi",
-                  "Ketentuan Layanan",
-                  "Komunitas",
-                ].map((item) => (
+                {footerLinks.map((footerMenu) => (
                   <button
-                    key={item}
+                    key={footerMenu}
                     className="
-                      text-white/50
-                      hover:text-white
-                      text-sm
+                      text-sm text-white/50
                       transition-colors duration-200
+                      hover:text-white
                     "
                   >
-                    {item}
+                    {footerMenu}
                   </button>
                 ))}
               </div>
 
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </footer>
   );

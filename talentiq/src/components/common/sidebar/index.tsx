@@ -100,8 +100,8 @@ const Sidebar = ({
       {/* MOBILE OVERLAY */}
       <div
         className={`lg:hidden fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 ${mobileOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
           }`}
         onClick={() => setMobileOpen(false)}
       />
@@ -114,8 +114,8 @@ const Sidebar = ({
         {/* Header */}
         <div
           className={`border-b border-gray-100 flex items-center ${collapsed
-              ? "justify-center px-2 py-5"
-              : "justify-between px-5 py-5"
+            ? "justify-center px-2 py-5"
+            : "justify-between px-5 py-5"
             }`}
         >
           <div
@@ -246,10 +246,17 @@ const Sidebar = ({
           )}
 
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => {
+              // hapus token/session jika ada
+              localStorage.removeItem("token");
+              sessionStorage.clear();
+
+              // redirect ke home
+              navigate("/");
+            }}
             className={`flex items-center w-full rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-all duration-200 ${collapsed
-                ? "justify-center px-2 py-3"
-                : "gap-3 px-3 py-2.5"
+              ? "justify-center px-2 py-3"
+              : "gap-3 px-3 py-2.5"
               }`}
           >
             <LogOut size={18} />

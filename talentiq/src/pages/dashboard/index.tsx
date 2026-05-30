@@ -1,4 +1,5 @@
 // src/pages/dashboard/index.tsx
+
 import {
   ArrowRight,
   BookOpen,
@@ -9,654 +10,1002 @@ import {
   Clock,
   Database,
   Loader2,
+  Star,
   Target,
   TrendingUp,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Sidebar from "@/components/common/sidebar";
-import { useScrollAnimation, animClass } from "@/hooks/use-scroll-animation";
+import { animClass, useScrollAnimation } from "@/hooks/use-scroll-animation";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA
-// ─────────────────────────────────────────────────────────────────────────────
-const mockData = {
-  user: { name: "Budi", fullName: "Budi Santoso" },
-  lastUpdated: "20 Mei 2025",
-  readinessScore: 72,
-  targetRole: "Data Analyst",
+// mock sementara
+const dashboardSnapshot = {
+  profile: {
+    firstName: "Budi",
+    completeName: "Budi Santoso",
+  },
 
-  ownedSkills: ["Python", "SQL", "Excel", "Statistics", "Pandas"],
-  neededSkills: ["Tableau", "Power BI", "ML Basics", "Spark", "Airflow"],
+  updatedAt: "20 Mei 2025",
+  jobReadyScore: 72,
+  dreamRole: "Data Analyst",
 
-  roadmap: [
+  masteredSkills: ["Python", "SQL", "Excel", "Statistics", "Pandas"],
+
+  missingSkills: [
+    "Tableau",
+    "Power BI",
+    "ML Basics",
+    "Spark",
+    "Airflow",
+  ],
+
+  learningJourney: [
     {
       id: 1,
       title: "Dasar Python",
-      status: "done",
-      duration: "4 minggu",
+      state: "done",
+      estimate: "4 minggu",
     },
     {
       id: 2,
       title: "SQL Lanjutan",
-      status: "active",
-      duration: "3 minggu",
+      state: "active",
+      estimate: "3 minggu",
       progress: 60,
     },
     {
       id: 3,
       title: "Visualisasi Data\n(Tableau)",
-      status: "next",
-      duration: "4 minggu",
+      state: "next",
+      estimate: "4 minggu",
     },
     {
       id: 4,
       title: "Machine Learning\nDasar",
-      status: "upcoming",
-      duration: "6 minggu",
+      state: "later",
+      estimate: "6 minggu",
     },
   ],
 
-  prioritySkills: [
+  highlightedSkills: [
     {
       id: 1,
-      name: "Tableau",
+      label: "Tableau",
       icon: <TrendingUp size={22} />,
-      reason: "Dibutuhkan 87% job listing Data Analyst",
-      relevance: 87,
-      color: "#025CB8",
-      bg: "#EFF6FF",
+      demand: "Dipakai di 87% lowongan Data Analyst",
+      percentage: 87,
+      accent: "#025CB8",
+      soft: "#EFF6FF",
     },
     {
       id: 2,
-      name: "Power BI",
+      label: "Power BI",
       icon: <Database size={22} />,
-      reason: "Dibutuhkan 79% job listing Data Analyst",
-      relevance: 79,
-      color: "#7C3AED",
-      bg: "#F5F3FF",
+      demand: "Dipakai di 79% lowongan Data Analyst",
+      percentage: 79,
+      accent: "#7C3AED",
+      soft: "#F5F3FF",
     },
     {
       id: 3,
-      name: "ML Basics",
+      label: "ML Basics",
       icon: <Brain size={22} />,
-      reason: "Dibutuhkan 65% job listing Data Analyst",
-      relevance: 65,
-      color: "#059669",
-      bg: "#ECFDF5",
+      demand: "Dipakai di 65% lowongan Data Analyst",
+      percentage: 65,
+      accent: "#059669",
+      soft: "#ECFDF5",
     },
   ],
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CIRCULAR PROGRESS CHART
-// ─────────────────────────────────────────────────────────────────────────────
-const CircularProgress = ({ value }: { value: number }) => {
-  const radius = 58;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (value / 100) * circumference;
+const suggestedCourses = [
+  {
+    id: 1,
+    title: "Belajar Tableau dari Nol",
+    field: "Visualisasi Data",
+    source: "Udemy",
+    duration: "4.5 jam",
+    rating: 4.8,
+    tag: "Rekomendasi AI",
+    tagStyle: "bg-indigo-100 text-indigo-700",
+    accent: "#4F46E5",
+  },
+  {
+    id: 2,
+    title: "Machine Learning Dasar",
+    field: "Machine Learning",
+    source: "Coursera",
+    duration: "12 jam",
+    rating: 4.9,
+    tag: "Populer",
+    tagStyle: "bg-green-100 text-green-700",
+    accent: "#10B981",
+  },
+  {
+    id: 3,
+    title: "Python untuk Data Science",
+    field: "Pemrograman",
+    source: "Dicoding",
+    duration: "15 jam",
+    rating: 4.7,
+    tag: "",
+    tagStyle: "",
+    accent: "#F59E0B",
+  },
+  {
+    id: 4,
+    title: "Advanced SQL & Database",
+    field: "Database",
+    source: "Udacity",
+    duration: "8 jam",
+    rating: 4.6,
+    tag: "",
+    tagStyle: "",
+    accent: "#EF4444",
+  },
+  {
+    id: 5,
+    title: "Statistics for Data Science",
+    field: "Matematika",
+    source: "edX",
+    duration: "20 jam",
+    rating: 4.8,
+    tag: "Rekomendasi AI",
+    tagStyle: "bg-indigo-100 text-indigo-700",
+    accent: "#025CB8",
+  },
+  {
+    id: 6,
+    title: "Storytelling with Data",
+    field: "Komunikasi",
+    source: "Skillshare",
+    duration: "3 jam",
+    rating: 4.9,
+    tag: "Populer",
+    tagStyle: "bg-green-100 text-green-700",
+    accent: "#8B5CF6",
+  },
+];
+
+// progress circle
+const ScoreCircle = ({ score }: { score: number }) => {
+  const size = 58;
+  const line = 2 * Math.PI * size;
+  const stroke = line - (score / 100) * line;
 
   return (
-    <div className="relative flex items-center justify-center w-40 h-40 mx-auto">
-      {/* Glow ring */}
+    <div className="relative mx-auto flex h-40 w-40 items-center justify-center">
       <div
         className="absolute inset-0 rounded-full opacity-20 blur-md"
-        style={{ background: "conic-gradient(#025CB8, #62AAEA, #025CB8)" }}
+        style={{
+          background:
+            "conic-gradient(#025CB8, #62AAEA, #025CB8)",
+        }}
       />
-      <svg width="160" height="160" className="rotate-[-90deg]">
-        {/* Track */}
+
+      <svg width="160" height="160" className="-rotate-90">
         <circle
           cx="80"
           cy="80"
-          r={radius}
+          r={size}
           fill="none"
           stroke="#E0EEFB"
           strokeWidth="10"
         />
-        {/* Progress */}
+
         <circle
           cx="80"
           cy="80"
-          r={radius}
+          r={size}
           fill="none"
-          stroke="url(#progressGradient)"
+          stroke="url(#scoreGradient)"
           strokeWidth="10"
           strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-all duration-1000 ease-out"
+          strokeDasharray={line}
+          strokeDashoffset={stroke}
+          className="duration-1000 ease-out transition-all"
         />
+
         <defs>
-          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient
+            id="scoreGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="0%"
+          >
             <stop offset="0%" stopColor="#025CB8" />
             <stop offset="100%" stopColor="#62AAEA" />
           </linearGradient>
         </defs>
       </svg>
-      {/* Center text */}
+
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-black text-[#025CB8]">{value}%</span>
-        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-          Siap Kerja
+        <span className="text-3xl font-black text-[#025CB8]">
+          {score}%
+        </span>
+
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+          siap kerja
         </span>
       </div>
     </div>
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SKILL BADGE
-// ─────────────────────────────────────────────────────────────────────────────
-const SkillBadge = ({
-  label,
-  variant = "owned",
+const BadgeSkill = ({
+  text,
+  type = "owned",
 }: {
-  label: string;
-  variant?: "owned" | "needed";
+  text: string;
+  type?: "owned" | "needed";
 }) => {
-  const styles = {
-    owned: "bg-blue-50 text-[#025CB8] border border-blue-100",
-    needed: "bg-red-50 text-red-600 border border-red-100",
-  };
+  const palette =
+    type === "owned"
+      ? "border border-blue-100 bg-blue-50 text-[#025CB8]"
+      : "border border-red-100 bg-red-50 text-red-500";
+
   return (
     <span
-      className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-transform hover:scale-105 ${styles[variant]}`}
+      className={`inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold transition hover:scale-105 ${palette}`}
     >
-      {label}
+      {text}
     </span>
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PROGRESS BAR
-// ─────────────────────────────────────────────────────────────────────────────
-const ProgressBar = ({
+const MiniBar = ({
   value,
-  color = "#025CB8",
+  accent = "#025CB8",
 }: {
   value: number;
-  color?: string;
+  accent?: string;
 }) => (
-  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
     <div
-      className="h-2 rounded-full transition-all duration-700 ease-out"
-      style={{ width: `${value}%`, background: color }}
+      className="h-2 rounded-full transition-all duration-700"
+      style={{
+        width: `${value}%`,
+        background: accent,
+      }}
     />
   </div>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ROADMAP STEP
-// ─────────────────────────────────────────────────────────────────────────────
-const roadmapConfig: Record<
-  string,
-  { icon: React.ReactNode; label: string; ring: string; dot: string; text: string }
-> = {
+// buat status roadmap
+const roadmapState = {
   done: {
-    icon: <CheckCircle2 size={20} />,
     label: "Selesai",
+    icon: <CheckCircle2 size={20} />,
     ring: "ring-2 ring-green-200",
-    dot: "bg-green-500",
     text: "text-green-600",
   },
+
   active: {
-    icon: <Loader2 size={20} className="animate-spin" />,
     label: "Sedang",
+    icon: <Loader2 size={20} className="animate-spin" />,
     ring: "ring-2 ring-blue-300",
-    dot: "bg-[#025CB8]",
     text: "text-[#025CB8]",
   },
+
   next: {
-    icon: <Clock size={20} />,
     label: "Berikutnya",
+    icon: <Clock size={20} />,
     ring: "ring-2 ring-orange-200",
-    dot: "bg-orange-400",
     text: "text-orange-500",
   },
-  upcoming: {
-    icon: <Clock size={20} />,
+
+  later: {
     label: "Mendatang",
+    icon: <Clock size={20} />,
     ring: "ring-2 ring-gray-200",
-    dot: "bg-gray-300",
     text: "text-gray-400",
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION WRAPPER (Animated)
-// ─────────────────────────────────────────────────────────────────────────────
-const Section = ({
+const FadeSection = ({
   children,
   direction = "up",
-  className = "",
+  extraClass = "",
 }: {
   children: React.ReactNode;
   direction?: "up" | "down" | "left" | "right" | "fade";
-  className?: string;
+  extraClass?: string;
 }) => {
   const { ref, isVisible } = useScrollAnimation();
+
   return (
-    <div ref={ref} className={`${animClass(isVisible, direction, 700, direction)} ${className}`}>
+    <div
+      ref={ref}
+      className={`${animClass(
+        isVisible,
+        direction,
+        700,
+        direction
+      )} ${extraClass}`}
+    >
       {children}
     </div>
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DASHBOARD PAGE
-// ─────────────────────────────────────────────────────────────────────────────
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [hoveredSkill, setHoveredSkill] = useState<number | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
-  const { user, lastUpdated, readinessScore, targetRole, ownedSkills, neededSkills, roadmap, prioritySkills } = mockData;
+
+  const [activeCard, setActiveCard] = useState<number | null>(null);
+  const [sidebarShrink, setSidebarShrink] = useState(false);
+
+  const {
+    profile,
+    updatedAt,
+    jobReadyScore,
+    dreamRole,
+    masteredSkills,
+    missingSkills,
+    learningJourney,
+    highlightedSkills,
+  } = dashboardSnapshot;
+
+  const sidebarWidth = useMemo(
+    () => (sidebarShrink ? "lg:ml-[90px]" : "lg:ml-[260px]"),
+    [sidebarShrink]
+  );
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
-      {/* Sidebar */}
       <Sidebar
-      collapsed={collapsed}
-        setCollapsed={setCollapsed}
+        collapsed={sidebarShrink}
+        setCollapsed={setSidebarShrink}
       />
 
-      {/* Main content — offset for sidebar on desktop */}
-      <div
-        className={`pb-24 lg:pb-8 pt-[72px] lg:pt-0 transition-all duration-300 ${collapsed ? "lg:ml-[90px]" : "lg:ml-[260px]"
-          }`}
+      <main
+        className={`pb-24 pt-[72px] transition-all duration-300 lg:pb-8 lg:pt-0 ${sidebarWidth}`}
       >
-
-        {/* ── HEADER BAR ─────────────────────────────────────────────────── */}
-        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-5 lg:px-8 py-4">
-          <div className="flex items-center justify-between max-w-6xl mx-auto">
+        {/* top bar */}
+        <div className="sticky top-0 z-30 border-b border-gray-100 bg-white/80 px-5 py-4 backdrop-blur-md lg:px-8">
+          <div className="mx-auto flex max-w-6xl items-center justify-between">
             <div>
               <h1 className="text-lg font-bold text-gray-800">
-                Selamat datang kembali, {user.name} 👋
+                Selamat datang kembali, {profile.firstName} 👋
               </h1>
-              <p className="text-sm text-gray-400 mt-0.5">
-                Terakhir diperbarui:{" "}
-                <span className="font-medium text-gray-500">{lastUpdated}</span>
-                {" · "}
-                <span className="text-[#025CB8] font-semibold">
-                  Skor Kesiapan Kerja: {readinessScore}%
+
+              <p className="mt-0.5 text-sm text-gray-400">
+                Terakhir diperbarui{" "}
+                <span className="font-medium text-gray-500">
+                  {updatedAt}
+                </span>
+
+                <span className="mx-1">·</span>
+
+                <span className="font-semibold text-[#025CB8]">
+                  Skor kesiapan: {jobReadyScore}%
                 </span>
               </p>
             </div>
-            {/* Score pill */}
+
             <div
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-semibold shadow-md"
-              style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+              className="hidden items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md sm:flex"
+              style={{
+                background:
+                  "linear-gradient(135deg, #025CB8, #62AAEA)",
+              }}
             >
               <Zap size={15} />
-              <span>{readinessScore}% Siap</span>
+              <span>{jobReadyScore}% Ready</span>
             </div>
           </div>
         </div>
 
-        {/* ── CONTENT AREA ─────────────────────────────────────────────────── */}
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-5 lg:px-8 pt-6 sm:pt-7 space-y-7">
-
-          {/* ── SECTION 1 — SKILL GAP CARDS ────────────────────────────── */}
-          <Section direction="up">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-
-              {/* Card 1 — Owned Skills */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <CheckCircle2 size={16} className="text-[#025CB8]" />
+        <div className="mx-auto w-full max-w-7xl space-y-7 px-4 pt-6 sm:px-5 sm:pt-7 lg:px-8">
+          {/* cards */}
+          <FadeSection>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {/* skill dimiliki */}
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+                    <CheckCircle2
+                      size={16}
+                      className="text-[#025CB8]"
+                    />
                   </div>
-                  <h2 className="font-semibold text-gray-700 text-sm">
-                    Skill yang Kamu Miliki
+
+                  <h2 className="text-sm font-semibold text-gray-700">
+                    Skill yang Sudah Ada
                   </h2>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
-                  {ownedSkills.map((s) => (
-                    <SkillBadge key={s} label={s} variant="owned" />
+                  {masteredSkills.map((skillName) => (
+                    <BadgeSkill
+                      key={skillName}
+                      text={skillName}
+                    />
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-4">
-                  {ownedSkills.length} skill teridentifikasi dari CV kamu
+
+                <p className="mt-4 text-xs text-gray-400">
+                  {masteredSkills.length} skill berhasil dibaca dari CV
                 </p>
               </div>
 
-              {/* Card 2 — Needed Skills */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+              {/* skill kurang */}
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50">
                     <Target size={16} className="text-red-500" />
                   </div>
-                  <h2 className="font-semibold text-gray-700 text-sm">
-                    Skill yang Dibutuhkan
+
+                  <h2 className="text-sm font-semibold text-gray-700">
+                    Skill yang Masih Kurang
                   </h2>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
-                  {neededSkills.map((s) => (
-                    <SkillBadge key={s} label={s} variant="needed" />
+                  {missingSkills.map((skillName) => (
+                    <BadgeSkill
+                      key={skillName}
+                      text={skillName}
+                      type="needed"
+                    />
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-4">
-                  {neededSkills.length} skill perlu dipelajari untuk target kamu
+
+                <p className="mt-4 text-xs text-gray-400">
+                  {missingSkills.length} skill perlu dipelajari
                 </p>
               </div>
 
-              {/* Card 3 — Readiness */}
+              {/* readiness */}
               <div
-                className="rounded-2xl p-5 shadow-sm border border-blue-100 hover:shadow-md transition-shadow duration-300 flex flex-col items-center justify-center"
-                style={{ background: "linear-gradient(160deg, #EFF6FF 0%, #DBEAFE 100%)" }}
+                className="flex flex-col items-center justify-center rounded-2xl border border-blue-100 p-5 shadow-sm transition hover:shadow-md"
+                style={{
+                  background:
+                    "linear-gradient(160deg, #EFF6FF 0%, #DBEAFE 100%)",
+                }}
               >
-                <h2 className="font-semibold text-gray-700 text-sm mb-4">
+                <h2 className="mb-4 text-sm font-semibold text-gray-700">
                   Tingkat Kesiapan
                 </h2>
-                <CircularProgress value={readinessScore} />
-                <p className="text-center mt-4 text-sm font-semibold text-[#025CB8]">
-                  Siap Kerja sebagai
+
+                <ScoreCircle score={jobReadyScore} />
+
+                <p className="mt-4 text-center text-sm font-semibold text-[#025CB8]">
+                  Siap kerja sebagai
                 </p>
+
                 <p className="text-center text-base font-black text-gray-800">
-                  {targetRole}
+                  {dreamRole}
                 </p>
               </div>
             </div>
-          </Section>
+          </FadeSection>
 
-          {/* ── SECTION 2 — TARGET KARIR ────────────────────────────────── */}
-          <Section direction="up">
-            <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center gap-4 hover:shadow-md transition-shadow duration-300">
-              <div className="flex items-center gap-3 flex-1">
+          {/* target */}
+          <FadeSection>
+            <div className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center">
+              <div className="flex flex-1 items-center gap-3">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-md"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #025CB8, #62AAEA)",
+                  }}
                 >
                   <Target size={20} className="text-white" />
                 </div>
+
                 <div>
-                  <p className="text-xs text-gray-400 font-medium">
-                    Posisi yang Kamu Incar
+                  <p className="text-xs font-medium text-gray-400">
+                    Role incaran kamu
                   </p>
-                  <div className="flex items-center gap-2 mt-0.5">
+
+                  <div className="mt-0.5 flex items-center gap-2">
                     <span className="text-lg font-black text-gray-800">
-                      {targetRole}
+                      {dreamRole}
                     </span>
+
                     <span
-                      className="text-xs px-2.5 py-0.5 rounded-full font-semibold text-white"
-                      style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                      className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #025CB8, #62AAEA)",
+                      }}
                     >
-                      Target Aktif
+                      Aktif
                     </span>
                   </div>
                 </div>
               </div>
+
               <button
-                className="flex items-center gap-1.5 text-sm font-semibold text-[#025CB8] hover:text-blue-700 transition-colors group"
                 onClick={() => navigate("/profil")}
+                className="group flex items-center gap-1.5 text-sm font-semibold text-[#025CB8] transition hover:text-blue-700"
               >
                 Ubah Target
-                <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+
+                <ArrowRight
+                  size={15}
+                  className="transition group-hover:translate-x-1"
+                />
               </button>
             </div>
-          </Section>
+          </FadeSection>
 
-          {/* ── SECTION 3 — ROADMAP PREVIEW ─────────────────────────────── */}
-          <Section direction="up">
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
+          {/* roadmap */}
+          <FadeSection>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+              <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <BookOpen size={16} className="text-[#025CB8]" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+                    <BookOpen
+                      size={16}
+                      className="text-[#025CB8]"
+                    />
                   </div>
-                  <h2 className="font-bold text-gray-800">Roadmap Karir Kamu</h2>
+
+                  <h2 className="font-bold text-gray-800">
+                    Roadmap Karir
+                  </h2>
                 </div>
+
                 <button
                   onClick={() => navigate("/jalur-karir")}
-                  className="flex items-center gap-1 text-xs font-semibold text-[#025CB8] hover:text-blue-700 transition-colors group"
+                  className="group flex items-center gap-1 text-xs font-semibold text-[#025CB8] transition hover:text-blue-700"
                 >
-                  Lihat Roadmap Lengkap
-                  <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                  Lihat semua
+
+                  <ChevronRight
+                    size={14}
+                    className="transition group-hover:translate-x-0.5"
+                  />
                 </button>
               </div>
 
-              {/* Timeline — horizontal on desktop, vertical on mobile */}
-              <div className="hidden xl:flex items-start gap-0 relative overflow-x-auto pb-2">
-                {roadmap.map((step, idx) => {
-                  const cfg = roadmapConfig[step.status];
-                  const isLast = idx === roadmap.length - 1;
+              <div className="hidden items-start overflow-x-auto pb-2 xl:flex">
+                {learningJourney.map((phase, index) => {
+                  const currentStep =
+                    roadmapState[
+                    phase.state as keyof typeof roadmapState
+                    ];
+
+                  const lastIndex =
+                    index === learningJourney.length - 1;
+
                   return (
-                    <div key={step.id} className="flex-1 flex flex-col items-center relative">
-                      {/* Connector line */}
-                      {!isLast && (
+                    <div
+                      key={phase.id}
+                      className="relative flex flex-1 flex-col items-center"
+                    >
+                      {!lastIndex && (
                         <div
-                          className={`absolute top-[19px] left-1/2 w-full h-0.5 z-0 ${step.status === "done" ? "bg-green-300" : "bg-gray-200"
+                          className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${phase.state === "done"
+                              ? "bg-green-300"
+                              : "bg-gray-200"
                             }`}
                         />
                       )}
-                      {/* Icon */}
+
                       <div
-                        className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${cfg.ring} ${cfg.text} bg-white shadow-sm`}
+                        className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
                       >
-                        {cfg.icon}
+                        {currentStep.icon}
                       </div>
-                      {/* Label */}
-                      <div className="mt-3 text-center px-1">
-                        <p className={`text-[11px] font-bold ${cfg.text} mb-0.5`}>
-                          {cfg.label}
+
+                      <div className="mt-3 px-1 text-center">
+                        <p
+                          className={`mb-0.5 text-[11px] font-bold ${currentStep.text}`}
+                        >
+                          {currentStep.label}
                         </p>
-                        <p className="text-xs font-semibold text-gray-700 whitespace-pre-line leading-snug">
-                          {step.title}
+
+                        <p className="whitespace-pre-line text-xs font-semibold leading-snug text-gray-700">
+                          {phase.title}
                         </p>
-                        <p className="text-[10px] text-gray-400 mt-1">
-                          {step.duration}
+
+                        <p className="mt-1 text-[10px] text-gray-400">
+                          {phase.estimate}
                         </p>
-                        {/* Progress for active */}
-                        {step.status === "active" && step.progress && (
-                          <div className="mt-2 w-full px-2">
-                            <ProgressBar value={step.progress} color="#025CB8" />
-                            <p className="text-[10px] text-[#025CB8] font-semibold mt-1">
-                              {step.progress}% selesai
-                            </p>
-                          </div>
-                        )}
+
+                        {phase.state === "active" &&
+                          phase.progress && (
+                            <div className="mt-2 w-full px-2">
+                              <MiniBar
+                                value={phase.progress}
+                              />
+
+                              <p className="mt-1 text-[10px] font-semibold text-[#025CB8]">
+                                {phase.progress}% selesai
+                              </p>
+                            </div>
+                          )}
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Mobile vertical timeline */}
-              <div className="xl:hidden flex flex-col gap-4">
-                {roadmap.map((step, idx) => {
-                  const cfg = roadmapConfig[step.status];
-                  const isLast = idx === roadmap.length - 1;
+              {/* mobile */}
+              <div className="flex flex-col gap-4 xl:hidden">
+                {learningJourney.map((phase, index) => {
+                  const currentStep =
+                    roadmapState[
+                    phase.state as keyof typeof roadmapState
+                    ];
+
+                  const lastIndex =
+                    index === learningJourney.length - 1;
+
                   return (
-                    <div key={step.id} className="flex items-start gap-3 relative">
-                      {/* Vertical connector */}
-                      {!isLast && (
+                    <div
+                      key={phase.id}
+                      className="relative flex items-start gap-3"
+                    >
+                      {!lastIndex && (
                         <div
-                          className={`absolute left-[19px] top-10 bottom-[-16px] w-0.5 ${step.status === "done" ? "bg-green-200" : "bg-gray-200"
+                          className={`absolute bottom-[-16px] left-[19px] top-10 w-0.5 ${phase.state === "done"
+                              ? "bg-green-200"
+                              : "bg-gray-200"
                             }`}
                         />
                       )}
+
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${cfg.ring} ${cfg.text} bg-white shadow-sm z-10`}
+                        className={`z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
                       >
-                        {cfg.icon}
+                        {currentStep.icon}
                       </div>
+
                       <div className="flex-1 pb-2">
-                        <span className={`text-[11px] font-bold ${cfg.text}`}>
-                          {cfg.label}
+                        <span
+                          className={`text-[11px] font-bold ${currentStep.text}`}
+                        >
+                          {currentStep.label}
                         </span>
-                        <p className="text-sm font-semibold text-gray-700 whitespace-pre-line leading-snug">
-                          {step.title}
+
+                        <p className="whitespace-pre-line text-sm font-semibold leading-snug text-gray-700">
+                          {phase.title}
                         </p>
-                        <p className="text-xs text-gray-400">{step.duration}</p>
-                        {step.status === "active" && step.progress && (
-                          <div className="mt-2">
-                            <ProgressBar value={step.progress} color="#025CB8" />
-                            <p className="text-xs text-[#025CB8] font-semibold mt-1">
-                              {step.progress}% selesai
-                            </p>
-                          </div>
-                        )}
+
+                        <p className="text-xs text-gray-400">
+                          {phase.estimate}
+                        </p>
+
+                        {phase.state === "active" &&
+                          phase.progress && (
+                            <div className="mt-2">
+                              <MiniBar
+                                value={phase.progress}
+                              />
+
+                              <p className="mt-1 text-xs font-semibold text-[#025CB8]">
+                                {phase.progress}% selesai
+                              </p>
+                            </div>
+                          )}
                       </div>
                     </div>
                   );
                 })}
-              </div>
-
-              {/* CTA */}
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={() => navigate("/jalur-karir")}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-                  style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
-                >
-                  Lihat Roadmap Lengkap
-                  <ArrowRight size={16} />
-                </button>
               </div>
             </div>
-          </Section>
+          </FadeSection>
 
-          {/* ── SECTION 4 — PRIORITY SKILLS ─────────────────────────────── */}
-          <Section direction="up">
+          {/* priority */}
+          <FadeSection>
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-gray-800 text-base">
-                  Skill yang Perlu Dipelajari Sekarang
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-base font-bold text-gray-800">
+                  Skill Prioritas
                 </h2>
-                <span className="text-xs text-gray-400">Prioritas tertinggi</span>
+
+                <span className="text-xs text-gray-400">
+                  fokus belajar sekarang
+                </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {prioritySkills.map((skill) => (
-                  <div
-                    key={skill.id}
-                    onMouseEnter={() => setHoveredSkill(skill.id)}
-                    onMouseLeave={() => setHoveredSkill(null)}
-                    className={`bg-white rounded-2xl p-5 border border-gray-100 cursor-pointer transition-all duration-300 ${hoveredSkill === skill.id
-                      ? "shadow-xl -translate-y-1 border-opacity-0"
-                      : "shadow-sm hover:shadow-md"
-                      }`}
-                    style={
-                      hoveredSkill === skill.id
-                        ? { borderColor: skill.color + "30" }
-                        : {}
-                    }
-                  >
-                    {/* Icon + Name */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
+
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                {highlightedSkills.map((skillCard) => {
+                  const isHover =
+                    activeCard === skillCard.id;
+
+                  return (
+                    <div
+                      key={skillCard.id}
+                      onMouseEnter={() =>
+                        setActiveCard(skillCard.id)
+                      }
+                      onMouseLeave={() =>
+                        setActiveCard(null)
+                      }
+                      className={`cursor-pointer rounded-2xl border border-gray-100 bg-white p-5 transition-all duration-300 ${isHover
+                          ? "border-opacity-0 shadow-xl -translate-y-1"
+                          : "shadow-sm hover:shadow-md"
+                        }`}
+                      style={
+                        isHover
+                          ? {
+                            borderColor:
+                              skillCard.accent + "30",
+                          }
+                          : {}
+                      }
+                    >
+                      <div className="mb-4 flex items-center gap-3">
+                        <div
+                          className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300"
+                          style={{
+                            background: isHover
+                              ? skillCard.accent
+                              : skillCard.soft,
+
+                            color: isHover
+                              ? "#fff"
+                              : skillCard.accent,
+                          }}
+                        >
+                          {skillCard.icon}
+                        </div>
+
+                        <div>
+                          <p className="font-bold text-gray-800">
+                            {skillCard.label}
+                          </p>
+
+                          <p className="text-[10px] text-gray-400">
+                            High Priority
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="mb-4 text-xs leading-relaxed text-gray-500">
+                        {skillCard.demand}
+                      </p>
+
+                      <div className="mb-4">
+                        <div className="mb-1.5 flex justify-between text-[11px] text-gray-500">
+                          <span>Relevansi industri</span>
+
+                          <span
+                            className="font-bold"
+                            style={{
+                              color: skillCard.accent,
+                            }}
+                          >
+                            {skillCard.percentage}%
+                          </span>
+                        </div>
+
+                        <MiniBar
+                          value={skillCard.percentage}
+                          accent={skillCard.accent}
+                        />
+                      </div>
+
+                      <button
+                        className="w-full rounded-xl py-2.5 text-xs font-bold text-white transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95"
                         style={{
-                          background:
-                            hoveredSkill === skill.id ? skill.color : skill.bg,
-                          color:
-                            hoveredSkill === skill.id ? "#fff" : skill.color,
+                          background: skillCard.accent,
                         }}
                       >
-                        {skill.icon}
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-800">{skill.name}</p>
-                        <p className="text-[10px] text-gray-400">Prioritas Tinggi</p>
-                      </div>
+                        Mulai Belajar →
+                      </button>
                     </div>
+                  );
+                })}
+              </div>
+            </div>
+          </FadeSection>
 
-                    {/* Reason */}
-                    <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-                      {skill.reason}
-                    </p>
+          {/* course */}
+          <FadeSection>
+            <div>
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <h2 className="flex items-center gap-2 text-base font-bold text-gray-800">
+                    <Target
+                      size={18}
+                      className="text-[#025CB8]"
+                    />
 
-                    {/* Progress */}
-                    <div className="mb-4">
-                      <div className="flex justify-between text-[11px] text-gray-500 mb-1.5">
-                        <span>Relevansi di Industri</span>
-                        <span className="font-bold" style={{ color: skill.color }}>
-                          {skill.relevance}%
-                        </span>
-                      </div>
-                      <ProgressBar value={skill.relevance} color={skill.color} />
-                    </div>
+                    Kursus Rekomendasi
+                  </h2>
 
-                    {/* Button */}
-                    <button
-                      className="w-full py-2.5 rounded-xl text-xs font-bold transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95 text-white"
-                      style={{ background: skill.color }}
+                  <p className="mt-1 text-sm text-gray-500">
+                    Berdasarkan target role kamu sebagai{" "}
+                    <span className="font-semibold text-[#025CB8]">
+                      {dreamRole}
+                    </span>
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => navigate("/profil")}
+                  className="group hidden items-center gap-1 text-sm font-semibold text-[#025CB8] transition hover:text-blue-700 sm:flex"
+                >
+                  Lihat semua
+
+                  <ChevronRight
+                    size={15}
+                    className="transition group-hover:translate-x-0.5"
+                  />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {suggestedCourses.map((courseItem) => (
+                  <div
+                    key={courseItem.id}
+                    className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <div
+                      className="relative flex h-32 w-full items-center justify-center"
+                      style={{
+                        backgroundColor:
+                          `${courseItem.accent}15`,
+                      }}
                     >
-                      Mulai Belajar →
-                    </button>
+                      <div
+                        className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm"
+                        style={{
+                          color: courseItem.accent,
+                        }}
+                      >
+                        <BookOpen size={28} />
+                      </div>
+
+                      {!!courseItem.tag && (
+                        <div
+                          className={`absolute left-3 top-3 rounded-lg px-2 py-1 text-[10px] font-bold shadow-sm ${courseItem.tagStyle}`}
+                        >
+                          {courseItem.tag}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-5">
+                      <span className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                        {courseItem.field}
+                      </span>
+
+                      <h3 className="mb-3 text-sm font-bold leading-tight text-gray-800 transition-colors group-hover:text-[#025CB8]">
+                        {courseItem.title}
+                      </h3>
+
+                      <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-3">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-semibold text-gray-600">
+                            {courseItem.source}
+                          </span>
+
+                          <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                            <Clock size={10} />
+
+                            {courseItem.duration}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs font-bold text-amber-600">
+                          <Star
+                            size={12}
+                            className="fill-amber-500"
+                          />
+
+                          {courseItem.rating}
+                        </div>
+                      </div>
+
+                      <button
+                        className="mt-4 w-full rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:shadow-md"
+                        style={{
+                          background: `linear-gradient(135deg, ${courseItem.accent}, ${courseItem.accent}CC)`,
+                        }}
+                      >
+                        Mulai Belajar
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-          </Section>
+          </FadeSection>
 
-          {/* ── SECTION 5 — BOTTOM BANNERS ──────────────────────────────── */}
-          <Section direction="up">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 pb-4">
-
-              {/* Banner 1 — Lowongan */}
+          {/* banner bawah */}
+          <FadeSection>
+            <div className="grid grid-cols-1 gap-5 pb-4 xl:grid-cols-2">
+              {/* lowongan */}
               <div
-                className="rounded-2xl p-6 relative overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
-                style={{ background: "linear-gradient(135deg, #025CB8 0%, #1D4ED8 100%)" }}
-                onClick={() => navigate("/lowongan-kerja")}
+                onClick={() =>
+                  navigate("/lowongan-kerja")
+                }
+                className="group relative cursor-pointer overflow-hidden rounded-2xl p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #025CB8 0%, #1D4ED8 100%)",
+                }}
               >
-                {/* Decorative circle */}
-                <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-white/10" />
-                <div className="absolute -right-2 -bottom-10 w-24 h-24 rounded-full bg-white/5" />
+                <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/10" />
+
+                <div className="absolute -bottom-10 -right-2 h-24 w-24 rounded-full bg-white/5" />
 
                 <div className="relative z-10">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-4">
-                    <Briefcase size={20} className="text-white" />
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                    <Briefcase
+                      size={20}
+                      className="text-white"
+                    />
                   </div>
-                  <h3 className="text-white font-bold text-base mb-1">
-                    Lowongan Untukmu
+
+                  <h3 className="mb-1 text-base font-bold text-white">
+                    Lowongan Buat Kamu
                   </h3>
-                  <p className="text-blue-100 text-sm leading-relaxed mb-5">
-                    <span className="text-white font-black text-lg">14 </span>
-                    lowongan Data Analyst tersedia yang cocok dengan skillmu
+
+                  <p className="mb-5 text-sm leading-relaxed text-blue-100">
+                    <span className="text-lg font-black text-white">
+                      14
+                    </span>{" "}
+                    lowongan cocok buat role Data Analyst
                   </p>
-                  <button className="flex items-center gap-2 bg-white text-[#025CB8] text-xs font-bold px-4 py-2 rounded-xl shadow hover:shadow-md group-hover:gap-3 transition-all duration-200">
+
+                  <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-[#025CB8] shadow transition-all duration-200 hover:shadow-md group-hover:gap-3">
                     Lihat Lowongan
+
                     <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
 
-              {/* Banner 2 — Kursus */}
+              {/* belajar */}
               <div
-                className="rounded-2xl p-6 relative overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
-                style={{ background: "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)" }}
-                onClick={() => navigate("/auth/analisis-skill")}
+                onClick={() =>
+                  navigate("/auth/analisis-skill")
+                }
+                className="group relative cursor-pointer overflow-hidden rounded-2xl p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)",
+                }}
               >
-                {/* Decorative circles */}
-                <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-white/10" />
-                <div className="absolute -right-2 -bottom-10 w-24 h-24 rounded-full bg-white/5" />
+                <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/10" />
+
+                <div className="absolute -bottom-10 -right-2 h-24 w-24 rounded-full bg-white/5" />
 
                 <div className="relative z-10">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-4">
-                    <BookOpen size={20} className="text-white" />
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                    <BookOpen
+                      size={20}
+                      className="text-white"
+                    />
                   </div>
-                  <h3 className="text-white font-bold text-base mb-1">
-                    Jalur Belajar Untukmu
+
+                  <h3 className="mb-1 text-base font-bold text-white">
+                    Jalur Belajar
                   </h3>
-                  <p className="text-purple-100 text-sm leading-relaxed mb-5">
-                    Mulai kursus Tableau dan tingkatkan peluangmu{" "}
-                    <span className="text-white font-black text-lg">23%</span>
+
+                  <p className="mb-5 text-sm leading-relaxed text-purple-100">
+                    Mulai belajar Tableau dan tingkatkan peluangmu{" "}
+                    <span className="text-lg font-black text-white">
+                      23%
+                    </span>
                   </p>
-                  <button className="flex items-center gap-2 bg-white text-purple-700 text-xs font-bold px-4 py-2 rounded-xl shadow hover:shadow-md group-hover:gap-3 transition-all duration-200">
+
+                  <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-purple-700 shadow transition-all duration-200 hover:shadow-md group-hover:gap-3">
                     Mulai Kursus
+
                     <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
             </div>
-          </Section>
+          </FadeSection>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
 
 export default Dashboard;
-// src/pages/dashboard/index.tsx

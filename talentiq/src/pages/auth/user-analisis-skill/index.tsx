@@ -21,34 +21,55 @@ import {
   Zap,
 } from "lucide-react";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import { useNavigate } from "react-router-dom";
 
 import Sidebar from "@/components/common/sidebar";
 
-// ─────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────
-type ExperienceLevel = "" | "fresh" | "junior" | "mid" | "senior";
+// tipe basic
+type CareerLevel = "" | "fresh" | "junior" | "mid" | "senior";
 
-type AnalyzeStatus =
+type CvProcessState =
   | "idle"
   | "processing"
   | "success"
   | "cv_not_found";
 
-const EXPERIENCE_OPTIONS: {
-  value: ExperienceLevel;
+const careerLevelOptions: {
+  value: CareerLevel;
   label: string;
   desc: string;
 }[] = [
-    { value: "fresh", label: "Fresh Graduate", desc: "0–1 tahun" },
-    { value: "junior", label: "Junior", desc: "1–3 tahun" },
-    { value: "mid", label: "Mid", desc: "3–5 tahun" },
-    { value: "senior", label: "Senior", desc: "5+ tahun" },
+    {
+      value: "fresh",
+      label: "Fresh Graduate",
+      desc: "0–1 tahun",
+    },
+    {
+      value: "junior",
+      label: "Junior",
+      desc: "1–3 tahun",
+    },
+    {
+      value: "mid",
+      label: "Mid",
+      desc: "3–5 tahun",
+    },
+    {
+      value: "senior",
+      label: "Senior",
+      desc: "5+ tahun",
+    },
   ];
 
-const INDUSTRY_OPTIONS = [
+const industryChoices = [
   "Teknologi",
   "Keuangan",
   "Kesehatan",
@@ -59,7 +80,7 @@ const INDUSTRY_OPTIONS = [
   "Pemerintahan",
 ];
 
-const SKILL_OPTIONS = [
+const skillChoices = [
   "HTML",
   "CSS",
   "JavaScript",
@@ -82,82 +103,91 @@ const SKILL_OPTIONS = [
   "Leadership",
 ];
 
-const LOADING_STEPS = [
+const loadingFlow = [
   {
-    text: "Mengunggah CV...",
+    label: "Mengunggah CV...",
     icon: <Upload size={16} />,
     duration: 1200,
   },
   {
-    text: "Membaca isi CV...",
+    label: "Membaca isi CV...",
     icon: <FileText size={16} />,
     duration: 1600,
   },
   {
-    text: "Mencari skill & pengalaman...",
+    label: "Mendeteksi skill & pengalaman...",
     icon: <Sparkles size={16} />,
     duration: 1700,
   },
   {
-    text: "Memvalidasi data CV...",
+    label: "Validasi data CV...",
     icon: <FileSearch size={16} />,
     duration: 1500,
   },
 ];
 
-// ─────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-const ACCEPTED_TYPES = [
+const acceptedMimeTypes = [
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-// ─────────────────────────────────────────────────────────────
-// INDUSTRY SELECT
-// ─────────────────────────────────────────────────────────────
-const IndustryMultiSelect = ({
-  selected,
-  onChange,
-}: {
-  selected: string[];
-  onChange: (val: string[]) => void;
-}) => {
-  const toggle = (item: string) => {
-    if (selected.includes(item)) {
-      onChange(selected.filter((s) => s !== item));
-    } else {
-      onChange([...selected, item]);
-    }
-  };
+// helper kecil
+const prettyFileSize = (size: number) => {
+  switch (true) {
+    case size < 1024:
+      return `${size} B`;
 
+    case size < 1024 * 1024:
+      return `${(size / 1024).toFixed(1)} KB`;
+
+    default:
+      return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  }
+};
+
+// toggle helper
+const updateSelectedValue = (
+  currentValue: string[],
+  nextValue: string
+) =>
+  currentValue.includes(nextValue)
+    ? currentValue.filter((entry) => entry !== nextValue)
+    : [...currentValue, nextValue];
+
+// pilih industri
+const IndustryPicker = ({
+  activeIndustries,
+  onSelect,
+}: {
+  activeIndustries: string[];
+  onSelect: (next: string[]) => void;
+}) => {
   return (
     <div className="flex flex-wrap gap-2 mt-2">
-      {INDUSTRY_OPTIONS.map((opt) => {
-        const active = selected.includes(opt);
+      {industryChoices.map((industryName) => {
+        const isActive =
+          activeIndustries.includes(industryName);
 
         return (
           <button
-            key={opt}
+            key={industryName}
             type="button"
-            onClick={() => toggle(opt)}
+            onClick={() =>
+              onSelect(
+                updateSelectedValue(
+                  activeIndustries,
+                  industryName
+                )
+              )
+            }
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200
-              ${active
+              ${isActive
                 ? "text-white border-transparent"
                 : "bg-white text-gray-500 border-gray-200 hover:border-[#025CB8]"
               }`}
             style={
-              active
+              isActive
                 ? {
                   background:
                     "linear-gradient(135deg, #025CB8, #000000)",
@@ -165,7 +195,7 @@ const IndustryMultiSelect = ({
                 : {}
             }
           >
-            {opt}
+            {industryName}
           </button>
         );
       })}
@@ -173,40 +203,41 @@ const IndustryMultiSelect = ({
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// EXPERIENCE SELECTOR
-// ─────────────────────────────────────────────────────────────
-const ExperienceSelector = ({
-  value,
-  onChange,
+// pilih level exp
+const CareerLevelSelector = ({
+  currentLevel,
+  onPick,
 }: {
-  value: ExperienceLevel;
-  onChange: (v: ExperienceLevel) => void;
+  currentLevel: CareerLevel;
+  onPick: (level: CareerLevel) => void;
 }) => (
   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
-    {EXPERIENCE_OPTIONS.map((opt) => {
-      const active = value === opt.value;
+    {careerLevelOptions.map((careerItem) => {
+      const selected =
+        currentLevel === careerItem.value;
 
       return (
         <button
-          key={opt.value}
+          key={careerItem.value}
           type="button"
-          onClick={() => onChange(opt.value)}
+          onClick={() => onPick(careerItem.value)}
           className={`rounded-xl border-2 px-3 py-3 text-center transition-all duration-200
-            ${active
+            ${selected
               ? "border-[#025CB8] bg-blue-50"
               : "border-gray-200 hover:border-blue-200"
             }`}
         >
           <div
-            className={`font-bold text-sm ${active ? "text-[#025CB8]" : "text-gray-700"
+            className={`font-bold text-sm ${selected
+                ? "text-[#025CB8]"
+                : "text-gray-700"
               }`}
           >
-            {opt.label}
+            {careerItem.label}
           </div>
 
           <div className="text-[10px] text-gray-400 mt-1">
-            {opt.desc}
+            {careerItem.desc}
           </div>
         </button>
       );
@@ -214,41 +245,39 @@ const ExperienceSelector = ({
   </div>
 );
 
-// ─────────────────────────────────────────────────────────────
-// SKILL CHECKBOX
-// ─────────────────────────────────────────────────────────────
-const SkillCheckbox = ({
-  selected,
-  onChange,
+// skill picker
+const SkillPicker = ({
+  selectedSkills,
+  onUpdate,
 }: {
-  selected: string[];
-  onChange: (val: string[]) => void;
+  selectedSkills: string[];
+  onUpdate: (next: string[]) => void;
 }) => {
-  const toggle = (skill: string) => {
-    if (selected.includes(skill)) {
-      onChange(selected.filter((s) => s !== skill));
-    } else {
-      onChange([...selected, skill]);
-    }
-  };
-
   return (
     <div className="flex flex-wrap gap-2 mt-2">
-      {SKILL_OPTIONS.map((skill) => {
-        const active = selected.includes(skill);
+      {skillChoices.map((skillName) => {
+        const checked =
+          selectedSkills.includes(skillName);
 
         return (
           <button
-            key={skill}
+            key={skillName}
             type="button"
-            onClick={() => toggle(skill)}
+            onClick={() =>
+              onUpdate(
+                updateSelectedValue(
+                  selectedSkills,
+                  skillName
+                )
+              )
+            }
             className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all duration-200
-              ${active
+              ${checked
                 ? "text-white border-transparent"
                 : "bg-white border-gray-200 text-gray-600 hover:border-[#025CB8]"
               }`}
             style={
-              active
+              checked
                 ? {
                   background:
                     "linear-gradient(135deg, #025CB8, #000000)",
@@ -256,7 +285,7 @@ const SkillCheckbox = ({
                 : {}
             }
           >
-            {skill}
+            {skillName}
           </button>
         );
       })}
@@ -264,67 +293,75 @@ const SkillCheckbox = ({
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// LOADING OVERLAY
-// ─────────────────────────────────────────────────────────────
-const LoadingOverlay = ({
-  onDone,
+// overlay loading
+const CvLoadingOverlay = ({
+  onFinish,
 }: {
-  onDone: () => void;
+  onFinish: () => void;
 }) => {
-  const [step, setStep] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] =
+    useState(0);
+
+  const [loadingPercent, setLoadingPercent] =
+    useState(0);
 
   useEffect(() => {
-    let currentStep = 0;
-
-    const totalDuration = LOADING_STEPS.reduce(
-      (a, b) => a + b.duration,
+    const totalDuration = loadingFlow.reduce(
+      (sum, flowItem) => sum + flowItem.duration,
       0
     );
 
-    const startTime = Date.now();
+    const startTimestamp = Date.now();
 
-    const progressInterval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
+    const progressTimer = setInterval(() => {
+      const elapsedTime =
+        Date.now() - startTimestamp;
 
-      const pct = Math.min(
-        Math.round((elapsed / totalDuration) * 100),
+      const percent = Math.min(
+        Math.round(
+          (elapsedTime / totalDuration) * 100
+        ),
         98
       );
 
-      setProgress(pct);
+      setLoadingPercent(percent);
     }, 60);
 
-    let cumulative = 0;
+    let accumulatedDuration = 0;
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
+    const queuedTimers: ReturnType<
+      typeof setTimeout
+    >[] = [];
 
-    LOADING_STEPS.forEach((s, idx) => {
+    loadingFlow.forEach((flowItem, idx) => {
       if (idx === 0) return;
 
-      cumulative += LOADING_STEPS[idx - 1].duration;
+      accumulatedDuration +=
+        loadingFlow[idx - 1].duration;
 
-      timers.push(
+      queuedTimers.push(
         setTimeout(() => {
-          currentStep++;
-          setStep(currentStep);
-        }, cumulative)
+          setCurrentStep(idx);
+        }, accumulatedDuration)
       );
     });
 
-    const finishTimer = setTimeout(() => {
-      clearInterval(progressInterval);
-      setProgress(100);
-      onDone();
+    const finalTimer = setTimeout(() => {
+      clearInterval(progressTimer);
+
+      setLoadingPercent(100);
+
+      onFinish();
     }, totalDuration);
 
     return () => {
-      clearInterval(progressInterval);
-      clearTimeout(finishTimer);
-      timers.forEach(clearTimeout);
+      clearInterval(progressTimer);
+
+      clearTimeout(finalTimer);
+
+      queuedTimers.forEach(clearTimeout);
     };
-  }, [onDone]);
+  }, [onFinish]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
@@ -339,7 +376,7 @@ const LoadingOverlay = ({
           >
             <Loader2
               size={35}
-              className="text-white animate-spin"
+              className="animate-spin text-white"
             />
           </div>
 
@@ -348,43 +385,46 @@ const LoadingOverlay = ({
           </h2>
 
           <p className="text-sm text-gray-400 mt-1">
-            AI sedang membaca dan menganalisis CV kamu
+            AI lagi membaca isi CV kamu...
           </p>
         </div>
 
         <div className="space-y-3">
-          {LOADING_STEPS.map((item, idx) => {
-            const active = idx === step;
-            const done = idx < step;
+          {loadingFlow.map((flowItem, idx) => {
+            const activeStep =
+              idx === currentStep;
+
+            const completedStep =
+              idx < currentStep;
 
             return (
               <div
-                key={idx}
+                key={flowItem.label}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300
-                  ${active
+                  ${activeStep
                     ? "bg-blue-50 border border-blue-200"
-                    : done
+                    : completedStep
                       ? "opacity-60"
                       : "opacity-30"
                   }`}
               >
                 <div
-                  className={`${active
-                    ? "text-[#025CB8]"
-                    : done
-                      ? "text-green-500"
-                      : "text-gray-300"
+                  className={`${activeStep
+                      ? "text-[#025CB8]"
+                      : completedStep
+                        ? "text-green-500"
+                        : "text-gray-300"
                     }`}
                 >
-                  {done ? (
+                  {completedStep ? (
                     <CheckCircle2 size={16} />
                   ) : (
-                    item.icon
+                    flowItem.icon
                   )}
                 </div>
 
                 <span className="text-sm font-medium">
-                  {item.text}
+                  {flowItem.label}
                 </span>
               </div>
             );
@@ -396,15 +436,15 @@ const LoadingOverlay = ({
             <div
               className="h-full rounded-full transition-all duration-150"
               style={{
-                width: `${progress}%`,
+                width: `${loadingPercent}%`,
                 background:
                   "linear-gradient(90deg, #025CB8, #000000)",
               }}
             />
           </div>
 
-          <p className="text-xs text-gray-400 mt-2 text-center">
-            {progress}% diproses
+          <p className="text-xs text-gray-400 text-center mt-2">
+            {loadingPercent}% diproses
           </p>
         </div>
       </div>
@@ -412,137 +452,166 @@ const LoadingOverlay = ({
   );
 };
 
-// ─────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────
+// main page
 const AnalisisSkill = () => {
-  const [collapsed, setCollapsed] = useState(false);
-
   const navigate = useNavigate();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef =
+    useRef<HTMLInputElement>(null);
 
-  const [uploadedFile, setUploadedFile] =
+  const [sidebarMini, setSidebarMini] =
+    useState(false);
+
+  const [cvFile, setCvFile] =
     useState<File | null>(null);
 
-  const [isDragging, setIsDragging] = useState(false);
+  const [dragActive, setDragActive] =
+    useState(false);
 
-  const [fileError, setFileError] = useState<string | null>(
-    null
-  );
+  const [uploadError, setUploadError] =
+    useState<string | null>(null);
 
-  const [analyzeStatus, setAnalyzeStatus] =
-    useState<AnalyzeStatus>("idle");
+  const [analysisState, setAnalysisState] =
+    useState<CvProcessState>("idle");
 
-  const [targetPosition, setTargetPosition] = useState("");
+  const [careerTarget, setCareerTarget] =
+    useState("");
 
-  const [experienceLevel, setExperienceLevel] =
-    useState<ExperienceLevel>("");
+  const [careerLevel, setCareerLevel] =
+    useState<CareerLevel>("");
 
-  const [selectedIndustries, setSelectedIndustries] =
+  const [preferredIndustries, setPreferredIndustries] =
     useState<string[]>([]);
 
-  const [knownSkills, setKnownSkills] = useState("");
+  const [manualSkills, setManualSkills] =
+    useState("");
 
-  const [selectedSkills, setSelectedSkills] = useState<
-    string[]
-  >([]);
+  const [selectedSkillTags, setSelectedSkillTags] =
+    useState<string[]>([]);
 
-  // FILE VALIDATION
-  const validateAndSetFile = useCallback((file: File) => {
-    setFileError(null);
+  const verifyFile = useCallback(
+    (incomingFile: File) => {
+      setUploadError(null);
 
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      setFileError(
-        "Format file tidak didukung. Gunakan PDF / DOCX."
-      );
-      return;
-    }
+      const invalidType =
+        !acceptedMimeTypes.includes(
+          incomingFile.type
+        );
 
-    if (file.size > 5 * 1024 * 1024) {
-      setFileError("Ukuran file maksimal 5MB.");
-      return;
-    }
+      const oversizedFile =
+        incomingFile.size >
+        5 * 1024 * 1024;
 
-    setUploadedFile(file);
-  }, []);
+      switch (true) {
+        case invalidType:
+          setUploadError(
+            "Format file belum didukung. Pakai PDF / DOCX ya."
+          );
+          return;
 
-  // DRAG DROP
-  const handleDragOver = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(true);
-    },
-    []
-  );
+        case oversizedFile:
+          setUploadError(
+            "Ukuran file maksimal 5MB."
+          );
+          return;
 
-  const handleDragLeave = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-    },
-    []
-  );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-
-      setIsDragging(false);
-
-      const file = e.dataTransfer.files[0];
-
-      if (file) validateAndSetFile(file);
-    },
-    [validateAndSetFile]
-  );
-
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-
-      if (file) validateAndSetFile(file);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+        default:
+          setCvFile(incomingFile);
       }
     },
-    [validateAndSetFile]
+    []
   );
 
-  // ANALYZE
-  const handleAnalyze = () => {
-    if (!uploadedFile) return;
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragActive(true);
+    },
+    []
+  );
 
-    setAnalyzeStatus("processing");
+  const handleDragExit = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragActive(false);
+    },
+    []
+  );
+
+  const handleDropFile = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+
+      setDragActive(false);
+
+      const droppedFile =
+        e.dataTransfer.files?.[0];
+
+      droppedFile && verifyFile(droppedFile);
+    },
+    [verifyFile]
+  );
+
+  const handleChooseFile = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const selectedFile =
+        e.target.files?.[0];
+
+      selectedFile &&
+        verifyFile(selectedFile);
+
+      if (uploadInputRef.current) {
+        uploadInputRef.current.value = "";
+      }
+    },
+    [verifyFile]
+  );
+
+  const startAnalysis = () => {
+    if (!cvFile) return;
+
+    setAnalysisState("processing");
   };
 
-  const handleAnalysisDone = () => {
-    setAnalyzeStatus("cv_not_found");
+  const finishAnalysis = () => {
+    setAnalysisState("cv_not_found");
   };
 
-  const canAnalyze = !!uploadedFile;
+  const isAnalyzeReady = useMemo(
+    () => Boolean(cvFile),
+    [cvFile]
+  );
 
   return (
     <>
-      {analyzeStatus === "processing" && (
-        <LoadingOverlay onDone={handleAnalysisDone} />
+      {analysisState === "processing" && (
+        <CvLoadingOverlay
+          onFinish={finishAnalysis}
+        />
       )}
 
       <div className="min-h-screen bg-[#F7F9FC]">
         <Sidebar
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
+          collapsed={sidebarMini}
+          setCollapsed={setSidebarMini}
         />
 
-        <div className={`pb-24 transition-all duration-300 ${collapsed ? "lg:ml-[90px]" : "lg:ml-[260px]"
-          }`}>
-          {/* HEADER */}
+        <div
+          className={`pb-24 transition-all duration-300 ${sidebarMini
+              ? "lg:ml-[90px]"
+              : "lg:ml-[260px]"
+            }`}
+        >
+          {/* topbar */}
           <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 px-5 py-4">
             <div className="max-w-5xl mx-auto">
               <nav className="flex items-center gap-1 text-xs text-gray-400 mb-2">
                 <button
-                  onClick={() => navigate("/dashboard")}
+                  onClick={() =>
+                    navigate("/dashboard")
+                  }
                   className="hover:text-[#025CB8]"
                 >
                   Dashboard
@@ -550,7 +619,7 @@ const AnalisisSkill = () => {
 
                 <ChevronRight size={12} />
 
-                <span className="text-[#025CB8] font-semibold">
+                <span className="font-semibold text-[#025CB8]">
                   Analisis CV
                 </span>
               </nav>
@@ -560,18 +629,17 @@ const AnalisisSkill = () => {
               </h1>
 
               <p className="text-sm text-gray-400 mt-1">
-                Upload CV kamu dan biarkan AI menganalisis
-                skill serta pengalaman kerja
+                Upload CV lalu biarkan AI bantu
+                analisis skill dan pengalamanmu
               </p>
             </div>
           </div>
 
-          {/* CONTENT */}
+          {/* content */}
           <div className="max-w-5xl mx-auto px-5 pt-7">
             <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-              {/* LEFT */}
+              {/* kiri */}
               <div className="space-y-5">
-                {/* UPLOAD CARD */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-5">
                     <Upload
@@ -584,16 +652,16 @@ const AnalisisSkill = () => {
                     </h2>
                   </div>
 
-                  {!uploadedFile ? (
+                  {!cvFile ? (
                     <div
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
+                      onDragOver={handleDragEnter}
+                      onDragLeave={handleDragExit}
+                      onDrop={handleDropFile}
                       onClick={() =>
-                        fileInputRef.current?.click()
+                        uploadInputRef.current?.click()
                       }
                       className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 cursor-pointer
-                        ${isDragging
+                        ${dragActive
                           ? "border-[#025CB8] bg-blue-50"
                           : "border-gray-200 hover:border-[#025CB8]"
                         }`}
@@ -612,19 +680,19 @@ const AnalisisSkill = () => {
                       </div>
 
                       <p className="font-semibold text-gray-700">
-                        Klik atau drag file CV ke sini
+                        Klik atau drag CV ke sini
                       </p>
 
                       <p className="text-xs text-gray-400 mt-2">
-                        PDF / DOCX • Maksimal 5MB
+                        PDF / DOCX • max 5MB
                       </p>
 
                       <input
-                        ref={fileInputRef}
+                        ref={uploadInputRef}
                         type="file"
                         className="hidden"
                         accept=".pdf,.doc,.docx"
-                        onChange={handleFileInput}
+                        onChange={handleChooseFile}
                       />
                     </div>
                   ) : (
@@ -644,19 +712,21 @@ const AnalisisSkill = () => {
 
                       <div className="flex-1">
                         <p className="font-semibold text-sm text-gray-700">
-                          {uploadedFile.name}
+                          {cvFile.name}
                         </p>
 
                         <p className="text-xs text-gray-400 mt-1">
-                          {formatBytes(uploadedFile.size)}
+                          {prettyFileSize(
+                            cvFile.size
+                          )}
                         </p>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => {
-                          setUploadedFile(null);
-                          setAnalyzeStatus("idle");
+                          setCvFile(null);
+                          setAnalysisState("idle");
                         }}
                         className="w-8 h-8 rounded-lg hover:bg-red-100 flex items-center justify-center"
                       >
@@ -668,152 +738,168 @@ const AnalisisSkill = () => {
                     </div>
                   )}
 
-                  {fileError && (
+                  {uploadError && (
                     <div className="mt-4 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm">
                       <AlertCircle size={16} />
-                      {fileError}
+                      {uploadError}
                     </div>
                   )}
                 </div>
 
-                {/* WARNING CV NOT FOUND */}
-                {analyzeStatus === "cv_not_found" && (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
-                        <SearchX
-                          size={24}
-                          className="text-red-600"
-                        />
-                      </div>
+                {analysisState ===
+                  "cv_not_found" && (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                          <SearchX
+                            size={24}
+                            className="text-red-600"
+                          />
+                        </div>
 
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-red-700">
-                          CV Tidak Dapat Dibaca
-                        </h3>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-red-700">
+                            CV Tidak Bisa Dibaca
+                          </h3>
 
-                        <p className="text-sm text-red-600 mt-2 leading-relaxed">
-                          Sistem tidak menemukan isi CV yang
-                          valid atau format CV sulit diproses.
-                          <br />
-                          Silakan upload ulang CV yang lebih
-                          jelas atau isi skill secara manual di
-                          bawah.
-                        </p>
+                          <p className="text-sm text-red-600 mt-2 leading-relaxed">
+                            Sistem belum menemukan isi CV
+                            yang valid atau format CV agak
+                            susah diproses.
+                            <br />
+                            Upload ulang CV yang lebih
+                            jelas atau isi manual skill di
+                            bawah ya.
+                          </p>
 
-                        <div className="flex flex-wrap gap-3 mt-5">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              fileInputRef.current?.click()
-                            }
-                            className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                            style={{
-                              background:
-                                "linear-gradient(135deg, #025CB8, #000000)",
-                            }}
-                          >
-                            Upload CV Lagi
-                          </button>
-
-                          <button
-                            type="button"
-                            className="px-4 py-2 rounded-xl border border-red-300 text-red-600 text-sm font-semibold hover:bg-red-100"
-                          >
-                            Isi Skill Manual
-                          </button>
+                          <div className="flex flex-wrap gap-3 mt-5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                uploadInputRef.current?.click()
+                              }
+                              className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, #025CB8, #000000)",
+                              }}
+                            >
+                              Upload CV Lagi
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* FORM */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
-                  <h2 className="font-bold text-gray-700">
-                    Informasi Tambahan
-                  </h2>
+                {analysisState ===
+                  "cv_not_found" && (
+                    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
+                      <div className="flex items-center gap-2">
+                        <Sparkles
+                          size={18}
+                          className="text-[#025CB8]"
+                        />
 
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600">
-                      Posisi yang Diincar
-                    </label>
+                        <h2 className="font-bold text-gray-700">
+                          Informasi Tambahan
+                        </h2>
+                      </div>
 
-                    <div className="relative mt-2">
-                      <User
-                        size={15}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600">
+                          Posisi yang Diincar
+                        </label>
 
-                      <input
-                        type="text"
-                        value={targetPosition}
-                        onChange={(e) =>
-                          setTargetPosition(e.target.value)
-                        }
-                        placeholder="Frontend Developer"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#025CB8]"
-                      />
+                        <div className="relative mt-2">
+                          <User
+                            size={15}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          />
+
+                          <input
+                            type="text"
+                            value={careerTarget}
+                            onChange={(e) =>
+                              setCareerTarget(
+                                e.target.value
+                              )
+                            }
+                            placeholder="Frontend Developer"
+                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#025CB8]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600">
+                          Level Pengalaman
+                        </label>
+
+                        <CareerLevelSelector
+                          currentLevel={
+                            careerLevel
+                          }
+                          onPick={setCareerLevel}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600">
+                          Bidang Industri
+                        </label>
+
+                        <IndustryPicker
+                          activeIndustries={
+                            preferredIndustries
+                          }
+                          onSelect={
+                            setPreferredIndustries
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600">
+                          Pilih Skill
+                        </label>
+
+                        <SkillPicker
+                          selectedSkills={
+                            selectedSkillTags
+                          }
+                          onUpdate={
+                            setSelectedSkillTags
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600">
+                          Tambah Skill Manual
+                        </label>
+
+                        <textarea
+                          rows={4}
+                          value={manualSkills}
+                          onChange={(e) =>
+                            setManualSkills(
+                              e.target.value
+                            )
+                          }
+                          placeholder="Contoh: React, Laravel, PostgreSQL..."
+                          className="w-full mt-2 rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:border-[#025CB8] resize-none"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600">
-                      Level Pengalaman
-                    </label>
-
-                    <ExperienceSelector
-                      value={experienceLevel}
-                      onChange={setExperienceLevel}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600">
-                      Bidang Industri
-                    </label>
-
-                    <IndustryMultiSelect
-                      selected={selectedIndustries}
-                      onChange={setSelectedIndustries}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600">
-                      Pilih Skill yang Kamu Miliki
-                    </label>
-
-                    <SkillCheckbox
-                      selected={selectedSkills}
-                      onChange={setSelectedSkills}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600">
-                      Tambahkan Skill Manual
-                    </label>
-
-                    <textarea
-                      rows={4}
-                      value={knownSkills}
-                      onChange={(e) =>
-                        setKnownSkills(e.target.value)
-                      }
-                      placeholder="Contoh: React, Laravel, PostgreSQL..."
-                      className="w-full mt-2 rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:border-[#025CB8] resize-none"
-                    />
-                  </div>
-                </div>
-
-                {/* BUTTON */}
                 <button
                   type="button"
-                  onClick={handleAnalyze}
-                  disabled={!canAnalyze}
+                  onClick={startAnalysis}
+                  disabled={!isAnalyzeReady}
                   className={`w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-all duration-300
-                    ${canAnalyze
+                    ${isAnalyzeReady
                       ? "hover:scale-[1.01]"
                       : "opacity-50 cursor-not-allowed"
                     }`}
@@ -828,9 +914,8 @@ const AnalisisSkill = () => {
                 </button>
               </div>
 
-              {/* RIGHT */}
+              {/* kanan */}
               <div className="space-y-4">
-                {/* AI ANALYSIS */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <div
@@ -847,7 +932,7 @@ const AnalisisSkill = () => {
                     </div>
 
                     <h3 className="font-bold text-gray-700">
-                      Yang Dianalisis AI
+                      Yang Dicek AI
                     </h3>
                   </div>
 
@@ -855,42 +940,47 @@ const AnalisisSkill = () => {
                     {[
                       {
                         icon: <Zap size={14} />,
-                        title: "Skill Teknis",
-                      },
-                      {
-                        icon: <Trophy size={14} />,
-                        title: "Pengalaman Kerja",
+                        label: "Skill Teknis",
                       },
                       {
                         icon: (
-                          <GraduationCap size={14} />
+                          <Trophy size={14} />
                         ),
-                        title: "Pendidikan",
+                        label: "Pengalaman Kerja",
                       },
                       {
                         icon: (
-                          <CheckCircle2 size={14} />
+                          <GraduationCap
+                            size={14}
+                          />
                         ),
-                        title: "Sertifikasi",
+                        label: "Pendidikan",
                       },
-                    ].map((item) => (
+                      {
+                        icon: (
+                          <CheckCircle2
+                            size={14}
+                          />
+                        ),
+                        label: "Sertifikasi",
+                      },
+                    ].map((infoCard) => (
                       <li
-                        key={item.title}
+                        key={infoCard.label}
                         className="flex items-center gap-3"
                       >
                         <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-[#025CB8]">
-                          {item.icon}
+                          {infoCard.icon}
                         </div>
 
                         <span className="text-sm text-gray-600 font-medium">
-                          {item.title}
+                          {infoCard.label}
                         </span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                {/* PRIVACY */}
                 <div className="rounded-2xl border border-green-200 bg-green-50 p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <Lock
@@ -904,8 +994,9 @@ const AnalisisSkill = () => {
                   </div>
 
                   <p className="text-sm text-green-700 leading-relaxed">
-                    Data CV hanya digunakan untuk analisis dan
-                    akan dihapus otomatis setelah proses selesai.
+                    Data CV hanya dipakai buat
+                    analisis dan otomatis dihapus
+                    setelah proses selesai.
                   </p>
 
                   <div className="flex items-center gap-2 mt-4 text-xs text-green-700 font-semibold">
@@ -914,7 +1005,6 @@ const AnalisisSkill = () => {
                   </div>
                 </div>
 
-                {/* TIPS */}
                 <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <Info
@@ -928,10 +1018,16 @@ const AnalisisSkill = () => {
                   </div>
 
                   <ul className="space-y-2 text-sm text-yellow-700">
-                    <li>• Gunakan format PDF</li>
-                    <li>• Hindari tabel terlalu banyak</li>
-                    <li>• Tambahkan skill secara jelas</li>
-                    <li>• Gunakan bullet point pengalaman</li>
+                    <li>• Pakai format PDF</li>
+                    <li>
+                      • Jangan terlalu banyak tabel
+                    </li>
+                    <li>
+                      • Tulis skill dengan jelas
+                    </li>
+                    <li>
+                      • Gunakan bullet point pengalaman
+                    </li>
                   </ul>
                 </div>
               </div>

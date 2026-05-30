@@ -1,63 +1,65 @@
-// src/layout/header/index.tsx
-
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import logoheader from "@/assets/logoheader.png";
+import logoHeader from "@/assets/logoheader.png";
 import StarBorder from "@/components/StarBorder";
 
-const navItems = [
-  { label: "Beranda", path: "/" },
-  { label: "Analisis Skill", path: "/analisis-skill" },
-  { label: "Jalur Karir", path: "/jalur-karir" },
-  { label: "Lowongan Kerja", path: "/lowongan-kerja" },
+const menuList = [
+  { name: "Beranda", url: "/" },
+  { name: "Analisis Skill", url: "/analisis-skill" },
+  { name: "Jalur Karir", url: "/jalur-karir" },
+  { name: "Lowongan Kerja", url: "/lowongan-kerja" },
 ];
 
 const HeaderComponent = () => {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
+  const currentRoute = useLocation();
+  const redirect = useNavigate();
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuShown, setMobileMenuShown] = useState(false);
+  const [headerCompact, setHeaderCompact] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 30);
+    const syncHeaderState = () => {
+      const isShrink = window.scrollY > 30;
+      setHeaderCompact((prev) => (
+        prev !== isShrink ? isShrink : prev
+      ));
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", syncHeaderState);
 
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", syncHeaderState);
+    };
   }, []);
 
   useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
+    mobileMenuShown && setMobileMenuShown(false);
+  }, [currentRoute.pathname]);
+
+  const floatingMenuPosition = useMemo(
+    () => (headerCompact ? "top-[78px]" : "top-[86px]"),
+    [headerCompact]
+  );
+
+  const goToLogin = () => redirect("/login");
 
   return (
     <>
-      {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-center px-4 sm:px-8 pt-4">
+      {/* top nav */}
+      <header className="fixed top-0 left-0 z-50 w-full flex justify-center px-4 sm:px-8 pt-4">
 
-        {/* OUTER GLOW */}
         <div className="relative w-full max-w-7xl">
 
-          {/* GLOW EFFECT */}
+          {/* glow dikit biar ga flat */}
           <div
-            className="
-              absolute inset-0
-              rounded-[28px]
-              blur-2xl
-              opacity-70
-              pointer-events-none
-            "
+            className="absolute inset-0 rounded-[28px] blur-2xl opacity-70 pointer-events-none"
             style={{
               background:
-                "linear-gradient(90deg, #62AAEA, #025CB8, #62AAEA)",
+                "linear-gradient(90deg,#62AAEA,#025CB8,#62AAEA)",
             }}
           />
 
-          {/* STAR BORDER */}
           <StarBorder
             as="div"
             color="#025cb8"
@@ -65,56 +67,55 @@ const HeaderComponent = () => {
             thickness={2}
             className="w-full rounded-[30px]"
           >
-            {/* MAIN CONTAINER */}
             <div
               className={`
-                flex items-center
-                rounded-[26px]
+                flex items-center rounded-[26px]
                 transition-all duration-300
-
-                ${scrolled
+                ${headerCompact
                   ? "bg-white/95 backdrop-blur-xl px-5 py-3"
                   : "bg-white/90 backdrop-blur-xl px-6 py-4"
                 }
               `}
             >
-              {/* LOGO */}
+
+              {/* logo */}
               <Link
                 to="/"
-                className="shrink-0 mr-6 lg:mr-14 flex items-center"
+                className="mr-6 lg:mr-14 shrink-0 flex items-center"
               >
                 <img
-                  src={logoheader}
+                  src={logoHeader}
                   alt="TalentIQ AI"
                   className={`
                     object-contain transition-all duration-300
-                    ${scrolled ? "h-[22px]" : "h-[28px]"}
+                    ${headerCompact ? "h-[22px]" : "h-[28px]"}
                   `}
                 />
               </Link>
 
-              {/* DESKTOP NAV */}
+              {/* desktop nav */}
               <nav className="hidden md:flex items-center gap-2 lg:gap-3">
-                {navItems.map((item) => {
-                  const isActive = pathname === item.path;
+                {menuList.map((navLink) => {
+                  const activePage =
+                    currentRoute.pathname === navLink.url;
 
                   return (
                     <Link
-                      key={item.path}
-                      to={item.path}
+                      key={navLink.url}
+                      to={navLink.url}
                       className={`
-                        relative px-4 py-2 rounded-xl
+                        relative rounded-xl px-4 py-2
                         font-semibold transition-all duration-300
 
-                        ${isActive
+                        ${activePage
                           ? "bg-gradient-to-r from-[#025CB8] to-[#62AAEA] text-white shadow-lg"
                           : "text-gray-600 hover:text-[#025CB8] hover:bg-[#025CB8]/5"
                         }
 
-                        ${scrolled ? "text-sm" : "text-[15px]"}
+                        ${headerCompact ? "text-sm" : "text-[15px]"}
                       `}
                     >
-                      {item.label}
+                      {navLink.name}
                     </Link>
                   );
                 })}
@@ -122,31 +123,30 @@ const HeaderComponent = () => {
 
               <div className="flex-1" />
 
-              {/* RIGHT ACTION */}
+              {/* kanan desktop */}
               <div className="hidden md:flex items-center gap-3">
 
-                {/* ACCOUNT BUTTON */}
                 <button
-                  onClick={() => navigate("/login")}
+                  onClick={goToLogin}
                   className="
+                    rounded-xl
                     bg-gradient-to-r
                     from-[#025CB8]
                     to-[#62AAEA]
-                    hover:from-[#0147A0]
-                    hover:to-[#025CB8]
                     text-white
                     font-bold
-                    rounded-xl
-                    transition-all duration-300
                     shadow-lg
-                    hover:shadow-2xl
+                    transition-all duration-300
                     hover:-translate-y-0.5
+                    hover:shadow-2xl
+                    hover:from-[#0147A0]
+                    hover:to-[#025CB8]
                   "
                 >
                   <span
                     className={`
                       block
-                      ${scrolled
+                      ${headerCompact
                         ? "px-4 py-2 text-sm"
                         : "px-5 py-2.5 text-sm"
                       }
@@ -157,20 +157,20 @@ const HeaderComponent = () => {
                 </button>
               </div>
 
-              {/* MOBILE BUTTON */}
+              {/* trigger mobile */}
               <button
+                aria-label="toggle navigation"
+                onClick={() => setMobileMenuShown((prev) => !prev)}
                 className="
                   md:hidden
                   w-11 h-11
-                  flex items-center justify-center
                   rounded-xl
+                  flex items-center justify-center
                   bg-[#025CB8]/10
                   text-[#025CB8]
-                  hover:bg-[#025CB8]/15
                   transition-all duration-300
+                  hover:bg-[#025CB8]/15
                 "
-                onClick={() => setMenuOpen(!menuOpen)}
-                aria-label="Toggle menu"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -179,7 +179,7 @@ const HeaderComponent = () => {
                   strokeWidth="2"
                   className="w-5 h-5"
                 >
-                  {menuOpen ? (
+                  {mobileMenuShown ? (
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -199,66 +199,66 @@ const HeaderComponent = () => {
         </div>
       </header>
 
-      {/* MOBILE MENU */}
+      {/* menu hp */}
       <div
         className={`
           fixed left-0 right-0 z-40 px-4 sm:px-8
           transition-all duration-300 ease-in-out
+          ${floatingMenuPosition}
 
-          ${menuOpen
+          ${mobileMenuShown
             ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 -translate-y-3 pointer-events-none"
           }
-
-          ${scrolled ? "top-[78px]" : "top-[86px]"}
         `}
       >
-        <div className="max-w-7xl mx-auto bg-white/95 backdrop-blur-xl border border-gray-100 rounded-2xl shadow-2xl overflow-hidden">
-          <div className="flex flex-col p-4 gap-2">
+        <div className="max-w-7xl mx-auto overflow-hidden rounded-2xl border border-gray-100 bg-white/95 backdrop-blur-xl shadow-2xl">
 
-            {navItems.map((item) => {
-              const isActive = pathname === item.path;
+          <div className="flex flex-col gap-2 p-4">
+
+            {menuList.map((navLink) => {
+              const currentPage =
+                currentRoute.pathname === navLink.url;
 
               return (
                 <Link
-                  key={item.path}
-                  to={item.path}
+                  key={navLink.url}
+                  to={navLink.url}
                   className={`
                     flex items-center justify-between
-                    px-4 py-3 rounded-xl
+                    rounded-xl px-4 py-3
                     font-semibold transition-all duration-300
 
-                    ${isActive
+                    ${currentPage
                       ? "bg-gradient-to-r from-[#025CB8] to-[#62AAEA] text-white"
                       : "text-gray-700 hover:bg-[#025CB8]/5 hover:text-[#025CB8]"
                     }
                   `}
                 >
-                  <span>{item.label}</span>
+                  <span>{navLink.name}</span>
 
-                  {isActive && (
-                    <div className="w-2 h-2 rounded-full bg-white" />
-                  )}
+                  {currentPage
+                    ? <div className="w-2 h-2 rounded-full bg-white" />
+                    : null}
                 </Link>
               );
             })}
 
-            <div className="h-px bg-gray-100 my-2" />
+            <div className="my-2 h-px bg-gray-100" />
 
             <button
-              onClick={() => navigate("/login")}
+              onClick={goToLogin}
               className="
                 flex items-center justify-center
+                rounded-xl py-3
+                font-bold text-white
                 bg-gradient-to-r
                 from-[#025CB8]
                 to-[#62AAEA]
-                hover:from-[#0147A0]
-                hover:to-[#025CB8]
-                text-white
-                font-bold
-                py-3 rounded-xl
                 transition-all duration-300
                 shadow-md
+                hover:from-[#0147A0]
+                hover:to-[#025CB8]
               "
             >
               Masuk ke Akun

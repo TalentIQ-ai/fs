@@ -1,4 +1,3 @@
-// src/pages/home.tsx
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -10,14 +9,16 @@ import {
   Trophy,
   Upload,
   Zap,
-  
 } from "lucide-react";
 
 import HeaderComponent from "@/layout/header";
-import { useScrollAnimation, animClass } from "@/hooks/use-scroll-animation";
+import {
+  useScrollAnimation,
+  animClass,
+} from "@/hooks/use-scroll-animation";
 
-// ── Animated Section Wrapper ──────────────────────────────────────────────────
-const AnimSection = ({
+// wrapper anim biar ga nulis logic berulang
+const MotionBlock = ({
   children,
   direction = "up",
   className = "",
@@ -38,66 +39,138 @@ const AnimSection = ({
   );
 };
 
-// ── Feature Cards ─────────────────────────────────────────────────────────────
-const features = [
+const featureMenus = [
   {
     title: "Analisis Skill",
-    desc: "AI membaca CV dan menganalisis skill teknis maupun soft skill secara otomatis.",
+    description:
+      "AI membaca CV dan menganalisis skill teknis maupun soft skill secara otomatis.",
     icon: <Sparkles size={22} />,
-    path: "/analisis-skill",
-    badge: "AI Analysis",
+    redirectTo: "/analisis-skill",
+    tag: "AI Analysis",
   },
   {
     title: "Jalur Karir",
-    desc: "Dapatkan roadmap belajar dan pengembangan karir berdasarkan skill kamu.",
+    description:
+      "Dapatkan roadmap belajar dan pengembangan karir berdasarkan skill kamu.",
     icon: <Target size={22} />,
-    path: "/jalur-karir",
-    badge: "Career Roadmap",
+    redirectTo: "/jalur-karir",
+    tag: "Career Roadmap",
   },
   {
     title: "Lowongan Pekerjaan",
-    desc: "Temukan lowongan yang cocok dengan kemampuan dan aspirasi karirmu.",
+    description:
+      "Temukan lowongan yang cocok dengan kemampuan dan aspirasi karirmu.",
     icon: <Briefcase size={22} />,
-    path: "/lowongan-kerja",
-    badge: "Job Matching",
+    redirectTo: "/lowongan-kerja",
+    tag: "Job Matching",
   },
 ];
 
-// ── Steps ─────────────────────────────────────────────────────────────────────
-const steps = [
+const workflowSteps = [
   {
     title: "Upload CV",
-    desc: "Upload CV format PDF atau DOCX.",
+    description: "Upload CV format PDF atau DOCX.",
     icon: <Upload size={20} />,
   },
   {
     title: "AI Analisis Skill",
-    desc: "AI membaca skill, pengalaman, dan potensi karir.",
+    description: "AI membaca skill, pengalaman, dan potensi karir.",
     icon: <BrainCircuit size={20} />,
   },
   {
     title: "Dapatkan Roadmap",
-    desc: "AI membuat jalur belajar dan karir personal.",
+    description: "AI membuat jalur belajar dan karir personal.",
     icon: <Target size={20} />,
   },
   {
     title: "Temukan Lowongan",
-    desc: "Lihat pekerjaan yang cocok dengan profilmu.",
+    description: "Lihat pekerjaan yang cocok dengan profilmu.",
     icon: <Briefcase size={20} />,
   },
 ];
 
-// ── Main Component ────────────────────────────────────────────────────────────
+const landingStats = [
+  {
+    icon: <Sparkles size={20} className="text-[#025CB8]" />,
+    bgClass: "bg-blue-50",
+    value: "94%",
+    label: "Akurasi AI Matching",
+  },
+  {
+    icon: <Briefcase size={20} className="text-green-600" />,
+    bgClass: "bg-green-50",
+    value: "10K+",
+    label: "Lowongan IT",
+  },
+  {
+    icon: <Target size={20} className="text-purple-500" />,
+    bgClass: "bg-purple-50",
+    value: "6+",
+    label: "Jalur Karir",
+  },
+  {
+    icon: <Clock size={20} className="text-orange-500" />,
+    bgClass: "bg-orange-50",
+    value: "≤12",
+    label: "Bulan Estimasi",
+  },
+];
+
+const dashboardSkills = [
+  { label: "Frontend Development", percent: "92%" },
+  { label: "UI/UX Design", percent: "78%" },
+  { label: "Data Analysis", percent: "65%" },
+];
+
+const roadmapPreview = [
+  {
+    title: "Frontend Fundamentals",
+    progress: 100,
+    state: "done",
+  },
+  {
+    title: "React Ecosystem",
+    progress: 70,
+    state: "progress",
+  },
+  {
+    title: "TypeScript Advanced",
+    progress: 0,
+    state: "locked",
+  },
+];
+
+const heroStats = [
+  { value: "10K+", label: "Lowongan IT" },
+  { value: "25+", label: "Skill Dianalisis" },
+  { value: "AI", label: "Career Matching" },
+];
+
 const Home = () => {
   const navigate = useNavigate();
+
+  const openPage = (path: string) => navigate(path);
+
+  const roadmapBadgeStyle = (state: string) => {
+    switch (state) {
+      case "done":
+        return "bg-green-500 text-white";
+
+      case "locked":
+        return "bg-gray-200 text-gray-500";
+
+      default:
+        return "bg-[#025CB8] text-white";
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <HeaderComponent />
 
-      <div className="flex-1 pt-[0px]">
+      <main className="flex-1">
 
-        {/* ── HERO ─────────────────────────────────────────────────────────── */}
+        {/* hero */}
         <section
           className="relative overflow-hidden"
           style={{
@@ -105,17 +178,16 @@ const Home = () => {
               "linear-gradient(135deg, #00458D 0%, #025CB8 45%, #62AAEA 100%)",
           }}
         >
-          {/* Blur Elements */}
           <div className="absolute top-0 left-0 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl" />
 
           <div className="relative z-10 max-w-7xl mx-auto px-5 lg:px-8 py-20 lg:py-28">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
 
-              {/* LEFT */}
-              <AnimSection direction="left">
+              <MotionBlock direction="left">
                 <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-full mb-6 backdrop-blur-sm">
                   <Sparkles size={14} className="text-white" />
+
                   <span className="text-white/90 text-xs font-bold">
                     AI Career Intelligence Platform
                   </span>
@@ -136,60 +208,53 @@ const Home = () => {
 
                 <div className="flex flex-wrap gap-4 mt-8">
                   <button
-                    onClick={() => navigate("/analisis-skill")}
+                    onClick={() => openPage("/analisis-skill")}
                     className="bg-white text-[#025CB8] font-bold px-7 py-4 rounded-2xl
-                               hover:bg-gray-100 transition-all duration-300
-                               shadow-lg hover:shadow-xl flex items-center gap-2"
+                    hover:bg-gray-100 transition-all duration-300
+                    shadow-lg hover:shadow-xl flex items-center gap-2"
                   >
                     Mulai Analisis Skill
                     <ArrowRight size={18} />
                   </button>
 
                   <button
-                    onClick={() => navigate("/jalur-karir")}
+                    onClick={() => openPage("/jalur-karir")}
                     className="border border-white/30 text-white font-semibold
-                               px-7 py-4 rounded-2xl hover:bg-white/10
-                               transition-all duration-300"
+                    px-7 py-4 rounded-2xl hover:bg-white/10
+                    transition-all duration-300"
                   >
                     Lihat Jalur Karir
                   </button>
                 </div>
 
-                {/* Mini Stats */}
                 <div className="flex flex-wrap gap-4 mt-10">
-                  {[
-                    { num: "10K+", label: "Lowongan IT" },
-                    { num: "25+", label: "Skill Dianalisis" },
-                    { num: "AI", label: "Career Matching" },
-                  ].map((item) => (
+                  {heroStats.map((statBox) => (
                     <div
-                      key={item.label}
+                      key={statBox.label}
                       className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-5 py-4"
                     >
                       <p className="text-white text-2xl font-black">
-                        {item.num}
+                        {statBox.value}
                       </p>
+
                       <p className="text-blue-100 text-xs mt-1">
-                        {item.label}
+                        {statBox.label}
                       </p>
                     </div>
                   ))}
                 </div>
-              </AnimSection>
+              </MotionBlock>
 
-              {/* RIGHT */}
-              <AnimSection direction="right">
+              <MotionBlock direction="right">
                 <div className="relative">
-
-                  {/* Main Dashboard Card */}
                   <div className="bg-white/95 backdrop-blur-md rounded-[32px] p-6 shadow-2xl border border-white/40">
 
-                    {/* Header */}
                     <div className="flex items-center justify-between mb-6">
                       <div>
                         <h3 className="font-black text-gray-800 text-lg">
                           AI Career Dashboard
                         </h3>
+
                         <p className="text-gray-400 text-sm mt-1">
                           Personal career intelligence
                         </p>
@@ -200,30 +265,16 @@ const Home = () => {
                       </div>
                     </div>
 
-                    {/* Skill Match */}
                     <div className="space-y-4 mb-6">
-                      {[
-                        {
-                          label: "Frontend Development",
-                          value: "92%",
-                        },
-                        {
-                          label: "UI/UX Design",
-                          value: "78%",
-                        },
-                        {
-                          label: "Data Analysis",
-                          value: "65%",
-                        },
-                      ].map((item) => (
-                        <div key={item.label}>
+                      {dashboardSkills.map((skillInfo) => (
+                        <div key={skillInfo.label}>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-gray-600">
-                              {item.label}
+                              {skillInfo.label}
                             </span>
 
                             <span className="text-sm font-bold text-[#025CB8]">
-                              {item.value}
+                              {skillInfo.percent}
                             </span>
                           </div>
 
@@ -231,7 +282,7 @@ const Home = () => {
                             <div
                               className="h-3 rounded-full"
                               style={{
-                                width: item.value,
+                                width: skillInfo.percent,
                                 background:
                                   "linear-gradient(90deg, #025CB8, #62AAEA)",
                               }}
@@ -241,72 +292,62 @@ const Home = () => {
                       ))}
                     </div>
 
-                    {/* Roadmap Preview */}
                     <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-5">
                       <p className="text-[#025CB8] text-xs font-bold uppercase tracking-wider mb-4">
                         Roadmap Progress
                       </p>
 
                       <div className="space-y-3">
-                        {[
-                          {
-                            title: "Frontend Fundamentals",
-                            progress: 100,
-                            done: true,
-                          },
-                          {
-                            title: "React Ecosystem",
-                            progress: 70,
-                          },
-                          {
-                            title: "TypeScript Advanced",
-                            progress: 0,
-                            locked: true,
-                          },
-                        ].map((step, i) => (
-                          <div
-                            key={i}
-                            className={`flex items-center gap-3 ${step.locked ? "opacity-40" : ""
-                              }`}
-                          >
+                        {roadmapPreview.map((phase, idx) => {
+                          const isLocked = phase.state === "locked";
+                          const isDone = phase.state === "done";
+
+                          return (
                             <div
-                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
-                              ${step.done
-                                  ? "bg-green-500 text-white"
-                                  : step.locked
-                                    ? "bg-gray-200 text-gray-500"
-                                    : "bg-[#025CB8] text-white"
-                                }`}
+                              key={phase.title}
+                              className={`flex items-center gap-3 ${isLocked ? "opacity-40" : ""}`}
                             >
-                              {step.done ? "✓" : step.locked ? "🔒" : i + 1}
-                            </div>
+                              <div
+                                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${roadmapBadgeStyle(
+                                  phase.state
+                                )}`}
+                              >
+                                {isDone
+                                  ? "✓"
+                                  : isLocked
+                                    ? "🔒"
+                                    : idx + 1}
+                              </div>
 
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold text-gray-700">
-                                {step.title}
-                              </p>
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-gray-700">
+                                  {phase.title}
+                                </p>
 
-                              {!step.locked && (
-                                <div className="mt-1 h-1.5 bg-white rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full bg-[#025CB8]"
-                                    style={{
-                                      width: `${step.progress}%`,
-                                    }}
-                                  />
-                                </div>
-                              )}
+                                {!isLocked && (
+                                  <div className="mt-1 h-1.5 bg-white rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-[#025CB8]"
+                                      style={{
+                                        width: `${phase.progress}%`,
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* AI Insight */}
                     <div className="bg-gradient-to-r from-[#025CB8] to-[#62AAEA] rounded-2xl p-5 text-white">
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles size={16} />
-                        <p className="font-bold text-sm">AI Insight</p>
+
+                        <p className="font-bold text-sm">
+                          AI Insight
+                        </p>
                       </div>
 
                       <p className="text-sm leading-7 text-blue-50">
@@ -317,68 +358,44 @@ const Home = () => {
                     </div>
                   </div>
                 </div>
-              </AnimSection>
+              </MotionBlock>
             </div>
           </div>
         </section>
 
-        {/* ── FEATURE STATS ─────────────────────────────────────────────── */}
+        {/* quick stats */}
         <section className="max-w-7xl mx-auto px-5 lg:px-8 py-14">
-          <AnimSection>
+          <MotionBlock>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-              {[
-                {
-                  icon: <Sparkles size={20} className="text-[#025CB8]" />,
-                  bg: "bg-blue-50",
-                  num: "94%",
-                  label: "Akurasi AI Matching",
-                },
-                {
-                  icon: <Briefcase size={20} className="text-green-600" />,
-                  bg: "bg-green-50",
-                  num: "10K+",
-                  label: "Lowongan IT",
-                },
-                {
-                  icon: <Target size={20} className="text-purple-500" />,
-                  bg: "bg-purple-50",
-                  num: "6+",
-                  label: "Jalur Karir",
-                },
-                {
-                  icon: <Clock size={20} className="text-orange-500" />,
-                  bg: "bg-orange-50",
-                  num: "≤12",
-                  label: "Bulan Estimasi",
-                },
-              ].map((item, i) => (
+              {landingStats.map((statCard) => (
                 <div
-                  key={i}
+                  key={statCard.label}
                   className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center gap-4"
                 >
                   <div
-                    className={`${item.bg} w-12 h-12 rounded-2xl flex items-center justify-center shrink-0`}
+                    className={`${statCard.bgClass} w-12 h-12 rounded-2xl flex items-center justify-center shrink-0`}
                   >
-                    {item.icon}
+                    {statCard.icon}
                   </div>
 
                   <div>
                     <p className="text-2xl font-black text-gray-800">
-                      {item.num}
+                      {statCard.value}
                     </p>
+
                     <p className="text-gray-400 text-sm font-medium">
-                      {item.label}
+                      {statCard.label}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
-          </AnimSection>
+          </MotionBlock>
         </section>
 
-        {/* ── FEATURES ─────────────────────────────────────────────────── */}
+        {/* fitur utama */}
         <section className="max-w-7xl mx-auto px-5 lg:px-8 pb-24">
-          <AnimSection>
+          <MotionBlock>
             <div className="text-center mb-14">
               <h2 className="text-3xl lg:text-4xl font-black text-gray-800">
                 Semua yang Kamu Butuhkan
@@ -389,16 +406,16 @@ const Home = () => {
                 roadmap belajar, hingga pencarian pekerjaan.
               </p>
             </div>
-          </AnimSection>
+          </MotionBlock>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {features.map((feature, i) => (
-              <AnimSection key={feature.title}>
+            {featureMenus.map((menuCard) => (
+              <MotionBlock key={menuCard.title}>
                 <button
-                  onClick={() => navigate(feature.path)}
+                  onClick={() => openPage(menuCard.redirectTo)}
                   className="group w-full bg-white rounded-[32px] border border-gray-100 shadow-sm
-                             hover:shadow-2xl transition-all duration-300
-                             hover:-translate-y-1 overflow-hidden text-left"
+                  hover:shadow-2xl transition-all duration-300
+                  hover:-translate-y-1 overflow-hidden text-left"
                 >
                   <div className="h-1.5 w-full bg-gradient-to-r from-[#025CB8] to-[#62AAEA]" />
 
@@ -411,24 +428,25 @@ const Home = () => {
                             "linear-gradient(135deg, #025CB8, #62AAEA)",
                         }}
                       >
-                        {feature.icon}
+                        {menuCard.icon}
                       </div>
 
                       <span className="text-[11px] font-bold text-[#025CB8] bg-[#025CB8]/10 px-3 py-1 rounded-full">
-                        {feature.badge}
+                        {menuCard.tag}
                       </span>
                     </div>
 
                     <h3 className="text-xl font-black text-gray-800 mb-3">
-                      {feature.title}
+                      {menuCard.title}
                     </h3>
 
                     <p className="text-gray-500 text-sm leading-7 mb-8">
-                      {feature.desc}
+                      {menuCard.description}
                     </p>
 
                     <div className="flex items-center gap-2 text-[#025CB8] font-bold text-sm">
                       Selengkapnya
+
                       <ArrowRight
                         size={16}
                         className="group-hover:translate-x-1 transition-transform"
@@ -436,14 +454,14 @@ const Home = () => {
                     </div>
                   </div>
                 </button>
-              </AnimSection>
+              </MotionBlock>
             ))}
           </div>
         </section>
 
-        {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
+        {/* alur */}
         <section className="max-w-6xl mx-auto px-5 lg:px-8 pb-24">
-          <AnimSection>
+          <MotionBlock>
             <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-8 lg:p-12">
 
               <div className="text-center mb-14">
@@ -457,37 +475,39 @@ const Home = () => {
               </div>
 
               <div className="grid md:grid-cols-4 gap-8">
-                {steps.map((step, i) => (
-                  <div key={step.title} className="text-center relative">
-
+                {workflowSteps.map((stepCard) => (
+                  <div
+                    key={stepCard.title}
+                    className="text-center relative"
+                  >
                     <div
                       className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center
-                                 text-white mb-5"
+                      text-white mb-5"
                       style={{
                         background:
                           "linear-gradient(135deg, #025CB8, #62AAEA)",
                       }}
                     >
-                      {step.icon}
+                      {stepCard.icon}
                     </div>
 
                     <h3 className="font-bold text-gray-800 mb-2">
-                      {step.title}
+                      {stepCard.title}
                     </h3>
 
                     <p className="text-sm text-gray-500 leading-7">
-                      {step.desc}
+                      {stepCard.description}
                     </p>
                   </div>
                 ))}
               </div>
             </div>
-          </AnimSection>
+          </MotionBlock>
         </section>
 
-        {/* ── CTA ─────────────────────────────────────────────────────── */}
+        {/* cta bawah */}
         <section className="max-w-6xl mx-auto px-5 lg:px-8 pb-24">
-          <AnimSection>
+          <MotionBlock>
             <div
               className="rounded-[32px] p-10 lg:p-14 text-center shadow-2xl"
               style={{
@@ -511,29 +531,29 @@ const Home = () => {
 
               <div className="flex flex-wrap justify-center gap-4 mt-8">
                 <button
-                  onClick={() => navigate("/analisis-skill")}
+                  onClick={() => openPage("/analisis-skill")}
                   className="px-8 py-4 rounded-2xl bg-white text-[#025CB8]
-                             font-bold text-lg shadow-lg hover:shadow-2xl
-                             hover:-translate-y-1 transition-all duration-300
-                             inline-flex items-center gap-2"
+                  font-bold text-lg shadow-lg hover:shadow-2xl
+                  hover:-translate-y-1 transition-all duration-300
+                  inline-flex items-center gap-2"
                 >
                   Mulai Sekarang
                   <ArrowRight size={20} />
                 </button>
 
                 <button
-                  onClick={() => navigate("/lowongan-kerja")}
+                  onClick={() => openPage("/lowongan-kerja")}
                   className="px-8 py-4 rounded-2xl border border-white/30
-                             text-white font-bold text-lg hover:bg-white/10
-                             transition-all duration-300"
+                  text-white font-bold text-lg hover:bg-white/10
+                  transition-all duration-300"
                 >
                   Lihat Lowongan
                 </button>
               </div>
             </div>
-          </AnimSection>
+          </MotionBlock>
         </section>
-      </div>
+      </main>
     </div>
   );
 };

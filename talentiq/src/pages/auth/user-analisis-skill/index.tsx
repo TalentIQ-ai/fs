@@ -32,6 +32,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import Sidebar from "@/components/common/sidebar";
+import { updateProfileService } from "@/services/profile.service";
 
 // tipe basic
 type CareerLevel = "" | "fresh" | "junior" | "mid" | "senior";
@@ -423,7 +424,7 @@ const CvLoadingOverlay = ({
                   )}
                 </div>
 
-                <span className="text-sm font-medium">
+                <span className="text-sm font-medium text-gray-700">
                   {flowItem.label}
                 </span>
               </div>
@@ -579,6 +580,37 @@ const AnalisisSkill = () => {
     setAnalysisState("cv_not_found");
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const saveManualData = async () => {
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      const combinedSkills = [
+        ...selectedSkillTags,
+        ...manualSkills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ];
+      await updateProfileService({
+        name: "",
+        targetRole: careerTarget,
+        experienceLevel: careerLevel,
+        skills: combinedSkills,
+      });
+      navigate("/dashboard");
+    } catch (err: any) {
+      setSaveError(
+        err?.response?.data?.message ||
+          "Gagal menyimpan. Coba lagi."
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const isAnalyzeReady = useMemo(
     () => Boolean(cvFile),
     [cvFile]
@@ -660,7 +692,7 @@ const AnalisisSkill = () => {
                       onClick={() =>
                         uploadInputRef.current?.click()
                       }
-                      className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 cursor-pointer
+                      className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transition-all duration-300 cursor-pointer
                         ${dragActive
                           ? "border-[#025CB8] bg-blue-50"
                           : "border-gray-200 hover:border-[#025CB8]"
@@ -892,6 +924,44 @@ const AnalisisSkill = () => {
                         />
                       </div>
                     </div>
+                  )}
+
+                  {/* Error simpan */}
+                  {saveError && (
+                    <div className="mt-4 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3 text-red-600 text-sm">
+                      <AlertCircle size={16} />
+                      {saveError}
+                    </div>
+                  )}
+
+                  {/* Tombol Simpan Data Analisis — hanya tampil saat cv_not_found */}
+                  {analysisState === "cv_not_found" && (
+                    <button
+                      type="button"
+                      onClick={saveManualData}
+                      disabled={isSaving || !careerTarget.trim()}
+                      className={`w-full mt-4 py-3.5 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300
+                        ${isSaving || !careerTarget.trim()
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:scale-[1.01]"
+                        }`}
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #059669, #047857)",
+                      }}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Menyimpan...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 size={16} />
+                          Simpan Data Analisis
+                        </>
+                      )}
+                    </button>
                   )}
 
                 <button

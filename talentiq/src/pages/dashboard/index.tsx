@@ -8,7 +8,10 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  Code2,
   Database,
+  FileCode2,
+  LineChart,
   Loader2,
   Star,
   Target,
@@ -383,6 +386,9 @@ const Dashboard = () => {
   const masteredSkills = dashboardData?.ownedSkills || [];
   const missingSkills = dashboardData?.neededSkills || [];
 
+  // Apakah user sudah pernah upload/scan CV?
+  const hasSkillData = masteredSkills.length > 0 || missingSkills.length > 0;
+
   const learningJourney = useMemo(() => {
     if (!dashboardData?.roadmap || dashboardData.roadmap.length === 0) {
       return [];
@@ -396,30 +402,41 @@ const Dashboard = () => {
     }));
   }, [dashboardData]);
 
+  // Mapping ikon berdasarkan kategori keyword — bukan nama persis
+  const getSkillIcon = (name: string) => {
+    const lower = name.toLowerCase();
+    if (["sql", "database", "postgresql", "mongodb", "mysql", "oracle"].some((k) => lower.includes(k)))
+      return <Database size={22} />;
+    if (["python", "java", "js", "javascript", "typescript", "react", "node", "php", "golang", "rust", "kotlin"].some((k) => lower.includes(k)))
+      return <FileCode2 size={22} />;
+    if (["tableau", "power bi", "powerbi", "matplotlib", "chart", "viz", "visualization", "looker"].some((k) => lower.includes(k)))
+      return <LineChart size={22} />;
+    if (["ml", "machine learning", "ai", "deep learning", "neural", "nlp"].some((k) => lower.includes(k)))
+      return <Brain size={22} />;
+    if (["code", "programming", "dev", "software", "engineer"].some((k) => lower.includes(k)))
+      return <Code2 size={22} />;
+    return <TrendingUp size={22} />;
+  };
+
   const highlightedSkills = useMemo(() => {
     if (!dashboardData?.prioritySkills || dashboardData.prioritySkills.length === 0) {
       return [];
     }
-    return dashboardData.prioritySkills.map((ps) => {
-      let icon = <Brain size={22} />;
-      if (ps.name === "Tableau") icon = <TrendingUp size={22} />;
-      else if (ps.name === "Power BI") icon = <Database size={22} />;
-
-      return {
-        id: ps.id,
-        label: ps.name,
-        icon,
-        demand: ps.reason || `Dibutuhkan untuk ${dreamRole}`,
-        percentage: ps.relevance,
-        accent: ps.color || "#025CB8",
-        soft: ps.bg || "#EFF6FF",
-      };
-    });
+    return dashboardData.prioritySkills.map((ps) => ({
+      id: ps.id,
+      label: ps.name,
+      icon: getSkillIcon(ps.name),
+      demand: ps.reason || `Dibutuhkan untuk ${dreamRole}`,
+      percentage: ps.relevance,
+      accent: ps.color || "#025CB8",
+      soft: ps.bg || "#EFF6FF",
+    }));
   }, [dashboardData, dreamRole]);
 
   const coursesToRender = useMemo(() => {
     if (!dashboardData?.recommendedCourses || dashboardData.recommendedCourses.length === 0) {
-      return suggestedCourses;
+      // Jangan pakai dummy jika belum ada data — tampilkan empty state
+      return [];
     }
     return dashboardData.recommendedCourses.map((course) => {
       let accent = "#025CB8";
@@ -576,7 +593,7 @@ const Dashboard = () => {
           <FadeSection>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {/* skill dimiliki */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md flex flex-col">
                 <div className="mb-4 flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
                     <CheckCircle2
@@ -590,22 +607,37 @@ const Dashboard = () => {
                   </h2>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {masteredSkills.map((skillName) => (
-                    <BadgeSkill
-                      key={skillName}
-                      text={skillName}
-                    />
-                  ))}
-                </div>
-
-                <p className="mt-4 text-xs text-gray-400">
-                  {masteredSkills.length} skill berhasil dibaca dari CV
-                </p>
+                {masteredSkills.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+                    <CheckCircle2 size={28} className="text-gray-200 mb-2" />
+                    <p className="text-xs font-semibold text-gray-400">Belum ada skill terdeteksi</p>
+                    <p className="text-[10px] text-gray-300 mt-0.5">Upload CV untuk analisis otomatis</p>
+                    <button
+                      onClick={() => navigate("/auth/user-analisis-skill")}
+                      className="mt-3 px-3 py-1.5 rounded-lg text-[11px] font-bold text-[#025CB8] border border-blue-200 hover:bg-blue-50 transition"
+                    >
+                      Upload CV →
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {masteredSkills.map((skillName) => (
+                        <BadgeSkill
+                          key={skillName}
+                          text={skillName}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-4 text-xs text-gray-400">
+                      {masteredSkills.length} skill berhasil dibaca dari CV
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* skill kurang */}
-              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md">
+              <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md flex flex-col">
                 <div className="mb-4 flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50">
                     <Target size={16} className="text-red-500" />
@@ -616,22 +648,60 @@ const Dashboard = () => {
                   </h2>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {missingSkills.map((skillName) => (
-                    <BadgeSkill
-                      key={skillName}
-                      text={skillName}
-                      type="needed"
-                    />
-                  ))}
-                </div>
-
-                <p className="mt-4 text-xs text-gray-400">
-                  {missingSkills.length} skill perlu dipelajari
-                </p>
+                {missingSkills.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+                    <Target size={28} className="text-gray-200 mb-2" />
+                    {!hasSkillData ? (
+                      /* Belum ada data skill sama sekali */
+                      <>
+                        <p className="text-xs font-semibold text-gray-400">Belum ada data skill</p>
+                        <p className="text-[10px] text-gray-300 mt-0.5">Upload CV agar AI bisa menganalisis gap skill-mu</p>
+                        <button
+                          onClick={() => navigate("/auth/user-analisis-skill")}
+                          className="mt-3 px-3 py-1.5 rounded-lg text-[11px] font-bold text-[#025CB8] border border-blue-200 hover:bg-blue-50 transition"
+                        >
+                          Upload CV →
+                        </button>
+                      </>
+                    ) : dreamRole === "Belum ditentukan" ? (
+                      /* Ada skill tapi belum ada target role */
+                      <>
+                        <p className="text-xs font-semibold text-gray-400">Target karir belum diset</p>
+                        <p className="text-[10px] text-gray-300 mt-0.5">Tentukan role agar gap skill bisa dianalisis</p>
+                        <button
+                          onClick={() => navigate("/profil")}
+                          className="mt-3 px-3 py-1.5 rounded-lg text-[11px] font-bold text-red-500 border border-red-200 hover:bg-red-50 transition"
+                        >
+                          Tentukan Target →
+                        </button>
+                      </>
+                    ) : (
+                      /* Ada skill, ada target, semua terpenuhi */
+                      <>
+                        <p className="text-xs font-semibold text-green-500">Semua skill terpenuhi! 🎉</p>
+                        <p className="text-[10px] text-gray-300 mt-0.5">Kamu siap melamar sebagai {dreamRole}</p>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {missingSkills.map((skillName) => (
+                        <BadgeSkill
+                          key={skillName}
+                          text={skillName}
+                          type="needed"
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-4 text-xs text-gray-400">
+                      {missingSkills.length} skill perlu dipelajari
+                    </p>
+                  </>
+                )}
               </div>
 
-              {/* readiness */}
+                {/* readiness */}
               <div
                 className="flex flex-col items-center justify-center rounded-2xl border border-blue-100 p-5 shadow-sm transition hover:shadow-md"
                 style={{
@@ -643,15 +713,40 @@ const Dashboard = () => {
                   Tingkat Kesiapan
                 </h2>
 
-                <ScoreCircle score={jobReadyScore} />
+                {!hasSkillData ? (
+                  /* Empty state — belum ada data CV */
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3"
+                      style={{ background: "rgba(255,255,255,0.6)", border: "3px dashed #93C5FD" }}
+                    >
+                      <Target size={28} className="text-blue-400" />
+                    </div>
+                    <p className="text-sm font-bold text-[#025CB8] mb-1">Belum dianalisis</p>
+                    <p className="text-xs text-blue-400 leading-relaxed mb-3">
+                      Upload CV untuk tahu seberapa siap kamu sebagai
+                      <span className="font-bold"> {dreamRole}</span>
+                    </p>
+                    <button
+                      onClick={() => navigate("/auth/user-analisis-skill")}
+                      className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-white transition hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                    >
+                      Analisis Sekarang →
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <ScoreCircle score={jobReadyScore} />
 
-                <p className="mt-4 text-center text-sm font-semibold text-[#025CB8]">
-                  Siap kerja sebagai
-                </p>
+                    <p className="mt-4 text-center text-sm font-semibold text-[#025CB8]">
+                      Siap kerja sebagai
+                    </p>
 
-                <p className="text-center text-base font-black text-gray-800">
-                  {dreamRole}
-                </p>
+                    <p className="text-center text-base font-black text-gray-800">
+                      {dreamRole}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </FadeSection>
@@ -737,131 +832,164 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              <div className="hidden items-start overflow-x-auto pb-2 xl:flex">
-                {learningJourney.map((phase, index) => {
-                  const currentStep =
-                    roadmapState[
-                    phase.state as keyof typeof roadmapState
-                    ];
-
-                  const lastIndex =
-                    index === learningJourney.length - 1;
-
-                  return (
-                    <div
-                      key={phase.id}
-                      className="relative flex flex-1 flex-col items-center"
+              {/* desktop */}
+              <div className="hidden items-start overflow-x-auto pb-2 lg:flex">
+                {learningJourney.length === 0 ? (
+                  <div className="w-full flex flex-col items-center justify-center py-10 text-center">
+                    <BookOpen size={32} className="text-gray-200 mb-3" />
+                    <p className="text-sm font-bold text-gray-400">Roadmap belum terbentuk</p>
+                    <p className="text-xs text-gray-300 mt-1">Tentukan target karir & upload CV untuk membuat roadmap AI-mu</p>
+                    <button
+                      onClick={() => navigate("/auth/user-analisis-skill")}
+                      className="mt-4 px-4 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
                     >
-                      {!lastIndex && (
-                        <div
-                          className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${phase.state === "done"
-                              ? "bg-green-300"
-                              : "bg-gray-200"
-                            }`}
-                        />
-                      )}
+                      Mulai Analisis CV →
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                  {learningJourney.map((phase, index) => {
+                    const currentStep =
+                      roadmapState[
+                      phase.state as keyof typeof roadmapState
+                      ];
 
+                    const lastIndex =
+                      index === learningJourney.length - 1;
+
+                    return (
                       <div
-                        className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
+                        key={phase.id}
+                        className="relative flex flex-1 flex-col items-center"
                       >
-                        {currentStep.icon}
-                      </div>
+                        {!lastIndex && (
+                          <div
+                            className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${phase.state === "done"
+                                ? "bg-green-300"
+                                : "bg-gray-200"
+                              }`}
+                          />
+                        )}
 
-                      <div className="mt-3 px-1 text-center">
-                        <p
-                          className={`mb-0.5 text-[11px] font-bold ${currentStep.text}`}
+                        <div
+                          className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
                         >
-                          {currentStep.label}
-                        </p>
+                          {currentStep.icon}
+                        </div>
 
-                        <p className="whitespace-pre-line text-xs font-semibold leading-snug text-gray-700">
-                          {phase.title}
-                        </p>
+                        <div className="mt-3 px-1 text-center">
+                          <p
+                            className={`mb-0.5 text-[11px] font-bold ${currentStep.text}`}
+                          >
+                            {currentStep.label}
+                          </p>
 
-                        <p className="mt-1 text-[10px] text-gray-400">
-                          {phase.estimate}
-                        </p>
+                          <p className="whitespace-pre-line text-xs font-semibold leading-snug text-gray-700">
+                            {phase.title}
+                          </p>
 
-                        {phase.state === "active" &&
-                          phase.progress && (
-                            <div className="mt-2 w-full px-2">
-                              <MiniBar
-                                value={phase.progress}
-                              />
+                          <p className="mt-1 text-[10px] text-gray-400">
+                            {phase.estimate}
+                          </p>
 
-                              <p className="mt-1 text-[10px] font-semibold text-[#025CB8]">
-                                {phase.progress}% selesai
-                              </p>
-                            </div>
-                          )}
+                          {phase.state === "active" &&
+                            phase.progress && (
+                              <div className="mt-2 w-full px-2">
+                                <MiniBar
+                                  value={phase.progress}
+                                />
+
+                                <p className="mt-1 text-[10px] font-semibold text-[#025CB8]">
+                                  {phase.progress}% selesai
+                                </p>
+                              </div>
+                            )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                  </>
+                )}
               </div>
 
-              {/* mobile */}
-              <div className="flex flex-col gap-4 xl:hidden">
-                {learningJourney.map((phase, index) => {
-                  const currentStep =
-                    roadmapState[
-                    phase.state as keyof typeof roadmapState
-                    ];
-
-                  const lastIndex =
-                    index === learningJourney.length - 1;
-
-                  return (
-                    <div
-                      key={phase.id}
-                      className="relative flex items-start gap-3"
+              {/* mobile / tablet */}
+              <div className="flex flex-col gap-4 lg:hidden">
+                {learningJourney.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <BookOpen size={28} className="text-gray-200 mb-2" />
+                    <p className="text-xs font-bold text-gray-400">Roadmap belum terbentuk</p>
+                    <button
+                      onClick={() => navigate("/auth/user-analisis-skill")}
+                      className="mt-3 px-3 py-1.5 rounded-lg text-[11px] font-bold text-[#025CB8] border border-blue-200 hover:bg-blue-50 transition"
                     >
-                      {!lastIndex && (
-                        <div
-                          className={`absolute bottom-[-16px] left-[19px] top-10 w-0.5 ${phase.state === "done"
-                              ? "bg-green-200"
-                              : "bg-gray-200"
-                            }`}
-                        />
-                      )}
+                      Mulai Analisis CV →
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                  {learningJourney.map((phase, index) => {
+                    const currentStep =
+                      roadmapState[
+                      phase.state as keyof typeof roadmapState
+                      ];
 
+                    const lastIndex =
+                      index === learningJourney.length - 1;
+
+                    return (
                       <div
-                        className={`z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
+                        key={phase.id}
+                        className="relative flex items-start gap-3"
                       >
-                        {currentStep.icon}
-                      </div>
+                        {!lastIndex && (
+                          <div
+                            className={`absolute bottom-[-16px] left-[19px] top-10 w-0.5 ${phase.state === "done"
+                                ? "bg-green-200"
+                                : "bg-gray-200"
+                              }`}
+                          />
+                        )}
 
-                      <div className="flex-1 pb-2">
-                        <span
-                          className={`text-[11px] font-bold ${currentStep.text}`}
+                        <div
+                          className={`z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
                         >
-                          {currentStep.label}
-                        </span>
+                          {currentStep.icon}
+                        </div>
 
-                        <p className="whitespace-pre-line text-sm font-semibold leading-snug text-gray-700">
-                          {phase.title}
-                        </p>
+                        <div className="flex-1 pb-2">
+                          <span
+                            className={`text-[11px] font-bold ${currentStep.text}`}
+                          >
+                            {currentStep.label}
+                          </span>
 
-                        <p className="text-xs text-gray-400">
-                          {phase.estimate}
-                        </p>
+                          <p className="whitespace-pre-line text-sm font-semibold leading-snug text-gray-700">
+                            {phase.title}
+                          </p>
 
-                        {phase.state === "active" &&
-                          phase.progress && (
-                            <div className="mt-2">
-                              <MiniBar
-                                value={phase.progress}
-                              />
+                          <p className="text-xs text-gray-400">
+                            {phase.estimate}
+                          </p>
 
-                              <p className="mt-1 text-xs font-semibold text-[#025CB8]">
-                                {phase.progress}% selesai
-                              </p>
-                            </div>
-                          )}
+                          {phase.state === "active" &&
+                            phase.progress && (
+                              <div className="mt-2">
+                                <MiniBar
+                                  value={phase.progress}
+                                />
+
+                                <p className="mt-1 text-xs font-semibold text-[#025CB8]">
+                                  {phase.progress}% selesai
+                                </p>
+                              </div>
+                            )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                  </>
+                )}
               </div>
             </div>
           </FadeSection>
@@ -879,7 +1007,25 @@ const Dashboard = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {highlightedSkills.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-10 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
+                    <Zap size={22} className="text-[#025CB8] opacity-50" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-400">Belum ada skill prioritas</p>
+                  <p className="text-xs text-gray-300 mt-1 max-w-xs">
+                    AI akan merekomendasikan skill yang harus difokuskan setelah kamu upload CV
+                  </p>
+                  <button
+                    onClick={() => navigate("/auth/user-analisis-skill")}
+                    className="mt-4 px-5 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                  >
+                    Analisis CV Sekarang →
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                 {highlightedSkills.map((skillCard) => {
                   const isHover =
                     activeCard === skillCard.id;
@@ -893,9 +1039,9 @@ const Dashboard = () => {
                       onMouseLeave={() =>
                         setActiveCard(null)
                       }
-                      className={`cursor-pointer rounded-2xl border border-gray-100 bg-white p-5 transition-all duration-300 ${isHover
+                      className={`cursor-pointer rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 flex flex-col ${isHover
                           ? "border-opacity-0 shadow-xl -translate-y-1"
-                          : "shadow-sm hover:shadow-md"
+                          : "hover:shadow-md"
                         }`}
                       style={
                         isHover
@@ -969,6 +1115,7 @@ const Dashboard = () => {
                   );
                 })}
               </div>
+              )}
             </div>
           </FadeSection>
 
@@ -1007,7 +1154,25 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {coursesToRender.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-10 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
+                    <BookOpen size={22} className="text-[#025CB8] opacity-50" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-400">Belum ada kursus rekomendasi</p>
+                  <p className="text-xs text-gray-300 mt-1 max-w-xs">
+                    Tentukan target karir agar AI bisa merekomendasikan kursus yang tepat untukmu
+                  </p>
+                  <button
+                    onClick={() => navigate("/profil")}
+                    className="mt-4 px-5 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                  >
+                    Set Target Karir →
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {coursesToRender.map((courseItem) => (
                   <div
                     key={courseItem.id}
@@ -1082,6 +1247,7 @@ const Dashboard = () => {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </FadeSection>
 
@@ -1117,9 +1283,12 @@ const Dashboard = () => {
 
                   <p className="mb-5 text-sm leading-relaxed text-blue-100">
                     <span className="text-lg font-black text-white">
-                      14
+                      {missingSkills.length > 0 ? missingSkills.length : ""}
                     </span>{" "}
-                    lowongan cocok buat role Data Analyst
+                    {missingSkills.length > 0
+                      ? `lowongan cocok buat role ${dreamRole}`
+                      : `Temukan lowongan untuk ${dreamRole}`
+                    }
                   </p>
 
                   <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-[#025CB8] shadow transition-all duration-200 hover:shadow-md group-hover:gap-3">
@@ -1158,10 +1327,15 @@ const Dashboard = () => {
                   </h3>
 
                   <p className="mb-5 text-sm leading-relaxed text-purple-100">
-                    Mulai belajar Tableau dan tingkatkan peluangmu{" "}
-                    <span className="text-lg font-black text-white">
-                      23%
-                    </span>
+                    {missingSkills.length > 0
+                      ? (
+                        <>Mulai belajar <span className="font-bold text-white">{missingSkills[0]}</span> dan tingkatkan peluangmu{" "}
+                        <span className="text-lg font-black text-white">
+                          {Math.min(Math.round((1 / Math.max(missingSkills.length + masteredSkills.length, 1)) * 100 + 5), 30)}%
+                        </span></>
+                      )
+                      : "Semua skill terpenuhi! Coba lamar pekerjaan sekarang."
+                    }
                   </p>
 
                   <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-purple-700 shadow transition-all duration-200 hover:shadow-md group-hover:gap-3">

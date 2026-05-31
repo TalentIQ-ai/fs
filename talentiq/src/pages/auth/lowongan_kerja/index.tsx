@@ -291,11 +291,11 @@ const CariLowongan = () => {
   }, []);
 
   const userSkills = useMemo(() => {
-    return profileData?.profile?.skills || ["Python", "SQL", "Excel"];
+    return profileData?.profile?.skills || [];
   }, [profileData]);
 
   const targetRole = useMemo(() => {
-    return profileData?.profile?.targetRole || "Data Analyst";
+    return profileData?.profile?.targetRole || "Programmer";
   }, [profileData]);
 
   const resolvedVacancies = useMemo(() => {
@@ -346,15 +346,14 @@ const CariLowongan = () => {
       const matched = vacancy.requiredSkills.filter((s) =>
         userSkills.some((us) => us.toLowerCase() === s.toLowerCase())
       );
-      const compatibility = Math.max(
-        30,
-        Math.round((matched.length / vacancy.requiredSkills.length) * 100)
-      );
+      const compatibility = vacancy.requiredSkills.length > 0
+        ? Math.round((matched.length / vacancy.requiredSkills.length) * 100)
+        : 0;
 
       return {
         ...vacancy,
         compatibility,
-        matchedStacks: matched.length > 0 ? matched : [vacancy.requiredSkills[0]],
+        matchedStacks: matched,
       };
     });
   }, [userSkills, targetRole]);
@@ -410,16 +409,15 @@ const CariLowongan = () => {
       const missing = vacancy.requiredSkills.filter(
         (s) => !userSkills.some((us) => us.toLowerCase() === s.toLowerCase())
       );
-      const compatibility = Math.max(
-        15,
-        Math.round((matched.length / vacancy.requiredSkills.length) * 100)
-      );
+      const compatibility = vacancy.requiredSkills.length > 0
+        ? Math.round((matched.length / vacancy.requiredSkills.length) * 100)
+        : 0;
 
       return {
         ...vacancy,
         compatibility,
-        currentSkills: matched.length > 0 ? matched : ["Excel"],
-        requiredSkills: missing.length > 0 ? missing : ["Communication"],
+        currentSkills: matched,
+        requiredSkills: missing.length > 0 ? missing : vacancy.requiredSkills,
       };
     });
   }, [userSkills, targetRole]);
@@ -552,10 +550,14 @@ const CariLowongan = () => {
 
               <p className="text-xs text-gray-500 mt-1">
                 Berdasarkan skill kamu:
-                <span className="font-semibold text-gray-700">
-                  {" "}
-                  {userSkills.join(", ")}
-                </span>
+                {userSkills.length > 0 ? (
+                  <span className="font-semibold text-gray-700">
+                    {" "}
+                    {userSkills.join(", ")}
+                  </span>
+                ) : (
+                  <span className="italic text-gray-400"> (Belum ada data skill)</span>
+                )}
               </p>
             </div>
 
@@ -568,76 +570,104 @@ const CariLowongan = () => {
             </div>
           </div>
 
-          {/* cocok */}
-          <section>
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 font-bold text-sm rounded-lg mb-2">
-                <Sparkles size={16} />
-                Skill Kamu Sudah Mumpuni
+          {userSkills.length === 0 ? (
+            /* Empty state jika belum ada CV / skill */
+            <section className="bg-white border border-gray-100 rounded-2xl p-8 text-center shadow-sm">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-blue-50">
+                  <Sparkles size={28} className="text-[#025CB8]" />
+                </div>
+              </div>
+              <h2 className="text-lg font-bold text-gray-800 mb-2">Maksimalkan Pencarian Kerjamu</h2>
+              <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                AI kami belum bisa mencocokkan lowongan dengan kemampuanmu. Silakan upload CV terlebih dahulu agar kami bisa merekomendasikan pekerjaan yang 100% cocok untukmu.
+              </p>
+              
+              <div className="flex justify-center">
+                <button
+                  onClick={() => window.location.href = "/auth/user-analisis-skill"}
+                  className="px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5"
+                  style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                >
+                  Upload CV Sekarang →
+                </button>
+              </div>
+            </section>
+          ) : (
+            <>
+              {/* cocok */}
+              <section>
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 font-bold text-sm rounded-lg mb-2">
+                    <Sparkles size={16} />
+                    Skill Kamu Sudah Mumpuni
+                  </div>
+
+                  <p className="text-sm text-gray-500">
+                    Kamu memenuhi kualifikasi untuk posisi-posisi ini.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {filteredRecommendations.map((vacancy) => (
+                    <JobCard
+                      key={vacancy.id}
+                      vacancy={vacancy}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-6 text-center">
+                  <button className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm">
+                    Muat Lebih Banyak Lowongan
+                  </button>
+                </div>
+              </section>
+
+              {/* garis pembatas */}
+              <div className="relative py-8 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-dashed border-gray-200" />
+                </div>
+
+                <div className="relative bg-[#F7F9FC] px-4 text-sm font-bold text-gray-400">
+                  — Tingkatkan skill kamu untuk posisi berikut —
+                </div>
               </div>
 
-              <p className="text-sm text-gray-500">
-                Kamu memenuhi 80%+ kualifikasi untuk posisi-posisi ini.
-              </p>
-            </div>
+              {/* target berikutnya */}
+              <section className="pb-10">
+                <div className="mb-6">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 font-bold text-sm rounded-lg mb-2">
+                    <Target size={16} />
+                    Perlu Tingkatkan Skill Dulu
+                  </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {filteredRecommendations.map((vacancy) => (
-                <JobCard
-                  key={vacancy.id}
-                  vacancy={vacancy}
-                />
-              ))}
-            </div>
+                  <p className="text-sm text-gray-500">
+                    Ada beberapa skill yang masih perlu kamu pelajari.
+                  </p>
+                </div>
 
-            <div className="mt-6 text-center">
-              <button className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm">
-                Muat Lebih Banyak Lowongan
-              </button>
-            </div>
-          </section>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {resolvedFutureTargets.map((vacancy) => (
+                    <JobCard
+                      key={vacancy.id}
+                      vacancy={vacancy}
+                      aspirational
+                    />
+                  ))}
+                </div>
 
-          {/* garis pembatas */}
-          <div className="relative py-8 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-dashed border-gray-200" />
-            </div>
-
-            <div className="relative bg-[#F7F9FC] px-4 text-sm font-bold text-gray-400">
-              — Tingkatkan skill kamu untuk posisi berikut —
-            </div>
-          </div>
-
-          {/* target berikutnya */}
-          <section className="pb-10">
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 font-bold text-sm rounded-lg mb-2">
-                <Target size={16} />
-                Perlu Tingkatkan Skill Dulu
-              </div>
-
-              <p className="text-sm text-gray-500">
-                Kamu memenuhi 40-79% kualifikasi.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {resolvedFutureTargets.map((vacancy) => (
-                <JobCard
-                  key={vacancy.id}
-                  vacancy={vacancy}
-                  aspirational
-                />
-              ))}
-            </div>
-
-            <div className="mt-6 text-center">
-              <button className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm">
-                Muat Lebih Banyak Aspirasi
-              </button>
-            </div>
-          </section>
+                <div className="mt-6 text-center">
+                  <button className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm">
+                    Muat Lebih Banyak Aspirasi
+                  </button>
+                </div>
+              </section>
+            </>
+          )}
         </div>
+
       </div>
     </div>
   );

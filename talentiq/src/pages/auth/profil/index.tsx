@@ -8,10 +8,11 @@ import {
   Flame,
   Loader2,
   PlayCircle,
+  Star,
   X,
 } from "lucide-react";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Sidebar from "@/components/common/sidebar";
 import {
@@ -20,53 +21,17 @@ import {
   UpdateProfilePayload,
   UserWithProfile,
 } from "@/services/profile.service";
+import {
+  getDashboardSummary,
+  ActiveCourse,
+  RecommendedCourse,
+} from "@/services/dashboard.service";
 
-// dummy dulu, nanti tinggal tarik API aja
-const enrolledCourseList = [
-  {
-    id: 1,
-    title: "SQL untuk Analisis Data",
-    platform: "Dicoding",
-    progress: 65,
-    lastAccessed: "2 hari lalu",
-    accent: "#025CB8",
-    bgSoft: "#EFF6FF",
-  },
-  {
-    id: 2,
-    title: "Data Manipulation with Python",
-    platform: "Coursera",
-    progress: 30,
-    lastAccessed: "Hari ini",
-    accent: "#7C3AED",
-    bgSoft: "#F5F3FF",
-  },
-];
+// dummy dulu, nanti tinggal tarik API aja — dihapus, sekarang pakai data API
 
-const suggestedLearningList = [
-  {
-    id: 1,
-    title: "Belajar Tableau dari Nol",
-    category: "Visualisasi Data",
-    platform: "Udemy",
-    duration: "4.5 jam",
-    rating: 4.8,
-    badge: "Direkomendasikan AI",
-    badgeStyle: "bg-indigo-100 text-indigo-700",
-    accent: "#4F46E5",
-  },
-  {
-    id: 2,
-    title: "Machine Learning Dasar",
-    category: "Machine Learning",
-    platform: "Coursera",
-    duration: "12 jam",
-    rating: 4.9,
-    badge: "Populer",
-    badgeStyle: "bg-green-100 text-green-700",
-    accent: "#10B981",
-  },
-];
+// Palet warna kursus berdasarkan index
+const courseAccents = ["#025CB8", "#7C3AED", "#059669", "#EF4444", "#F59E0B", "#8B5CF6"];
+const courseBgSofts = ["#EFF6FF", "#F5F3FF", "#ECFDF5", "#FEF2F2", "#FEF3C7", "#F5F3FF"];
 
 // progress kecil
 const ProgressLine = ({
@@ -104,6 +69,10 @@ const ProfilKursus = () => {
 
   const [sidebarMini, setSidebarMini] = useState(false);
 
+  // avatar upload ref
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
   // api state
   const [profileDetail, setProfileDetail] =
     useState<UserWithProfile | null>(null);
@@ -113,6 +82,10 @@ const ProfilKursus = () => {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [showSavedAlert, setShowSavedAlert] = useState(false);
+
+  // kursus dari dashboard API
+  const [activeCourseList, setActiveCourseList] = useState<ActiveCourse[]>([]);
+  const [recommendedCourseList, setRecommendedCourseList] = useState<RecommendedCourse[]>([]);
 
   // form state
   const [fullName, setFullName] = useState("");
@@ -130,23 +103,27 @@ const ProfilKursus = () => {
       try {
         setIsFetchingProfile(true);
 
-        const profileResponse = await getProfileService();
+        const [profileResponse, dashboardResponse] = await Promise.all([
+          getProfileService(),
+          getDashboardSummary().catch(() => null),
+        ]);
+
         const currentUser = profileResponse.user;
-
         setProfileDetail(currentUser);
-
         setFullName(currentUser.name ?? "");
         setCareerTarget(currentUser.profile?.targetRole ?? "");
-
         setExperienceTier(
           currentUser.profile?.experienceLevel ??
             "Fresh Graduate (0-1 tahun)"
         );
-
         setSkillCollection(currentUser.profile?.skills ?? []);
+
+        if (dashboardResponse) {
+          setActiveCourseList(dashboardResponse.activeCourses || []);
+          setRecommendedCourseList(dashboardResponse.recommendedCourses || []);
+        }
       } catch (fetchErr: any) {
         console.error("profile error:", fetchErr);
-
         setErrorMessage(
           "Profil gagal dimuat. Coba refresh halaman ya."
         );
@@ -157,6 +134,13 @@ const ProfilKursus = () => {
 
     loadProfile();
   }, []);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setAvatarPreview(objectUrl);
+  };
 
   const handleSkillInput = (
     keyboardEvent: React.KeyboardEvent<HTMLInputElement>
@@ -211,7 +195,8 @@ const ProfilKursus = () => {
     try {
       const requestBody: UpdateProfilePayload = {
         name: fullName.trim(),
-        targetRole: careerTarget || undefined,
+        // Kirim string kosong apa adanya agar user bisa mereset target karir
+        targetRole: careerTarget,
         experienceLevel: experienceTier || undefined,
         skills: skillCollection,
       };
@@ -238,18 +223,18 @@ const ProfilKursus = () => {
     () => ({
       active:
         profileDetail?.profile?.activeCourses ??
-        enrolledCourseList.length,
+        activeCourseList.length,
 
       completed:
-        profileDetail?.profile?.completedCourses ?? 5,
+        profileDetail?.profile?.completedCourses ?? 0,
 
       hours:
-        profileDetail?.profile?.totalHours ?? 34,
+        profileDetail?.profile?.totalHours ?? 0,
 
       streak:
-        profileDetail?.profile?.streakDays ?? 7,
+        profileDetail?.profile?.streakDays ?? 0,
     }),
-    [profileDetail]
+    [profileDetail, activeCourseList.length]
   );
 
   if (isFetchingProfile) {
@@ -341,176 +326,235 @@ const ProfilKursus = () => {
         <div className="mx-auto max-w-5xl space-y-8 px-5 pt-6 lg:px-8">
           {currentTab === "progress" ? (
             <>
-              {/* stat */}
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
+              {/* stat — overflow protection untuk layar kecil */}
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="flex items-center gap-2 sm:gap-4 rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm overflow-hidden min-w-0">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50">
                     <PlayCircle
-                      size={24}
+                      size={22}
                       className="text-[#025CB8]"
                     />
                   </div>
 
-                  <div>
-                    <p className="text-xs font-medium text-gray-400">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-gray-400 truncate">
                       Kursus Aktif
                     </p>
 
-                    <p className="text-2xl font-black text-gray-800">
+                    <p className="text-xl sm:text-2xl font-black text-gray-800">
                       {dashboardStats.active}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50">
+                <div className="flex items-center gap-2 sm:gap-4 rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm overflow-hidden min-w-0">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-green-50">
                     <Award
-                      size={24}
+                      size={22}
                       className="text-green-600"
                     />
                   </div>
 
-                  <div>
-                    <p className="text-xs font-medium text-gray-400">
-                      Kursus Selesai
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-gray-400 truncate">
+                      Selesai
                     </p>
 
-                    <p className="text-2xl font-black text-gray-800">
+                    <p className="text-xl sm:text-2xl font-black text-gray-800">
                       {dashboardStats.completed}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50">
+                <div className="flex items-center gap-2 sm:gap-4 rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm overflow-hidden min-w-0">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-purple-50">
                     <Clock
-                      size={24}
+                      size={22}
                       className="text-purple-600"
                     />
                   </div>
 
-                  <div>
-                    <p className="text-xs font-medium text-gray-400">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-gray-400 truncate">
                       Total Jam
                     </p>
 
-                    <p className="text-2xl font-black text-gray-800">
+                    <p className="text-xl sm:text-2xl font-black text-gray-800">
                       {dashboardStats.hours}
-                      <span className="ml-1 text-sm font-bold text-gray-500">
-                        jam
+                      <span className="ml-0.5 text-xs sm:text-sm font-bold text-gray-500">
+                        j
                       </span>
                     </p>
                   </div>
                 </div>
 
                 <div
-                  className="flex items-center gap-4 rounded-2xl border border-gray-100 p-5 shadow-sm"
+                  className="flex items-center gap-2 sm:gap-4 rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm overflow-hidden min-w-0"
                   style={{
                     background:
                       "linear-gradient(135deg, #FFF7ED, #FFEDD5)",
                   }}
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-orange-100">
                     <Flame
-                      size={24}
+                      size={22}
                       className="text-orange-500"
                     />
                   </div>
 
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-orange-600/70">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-wider text-orange-600/70 truncate">
                       Streak
                     </p>
 
-                    <p className="mt-0.5 text-xl font-black text-orange-600">
-                      {dashboardStats.streak} hari 🔥
+                    <p className="mt-0.5 text-lg sm:text-xl font-black text-orange-600 truncate">
+                      {dashboardStats.streak}h 🔥
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* course aktif */}
+              {/* course aktif — data dari API */}
               <div>
                 <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-800">
                   <PlayCircle
                     size={18}
                     className="text-[#025CB8]"
                   />
-
                   Kursus Aktif Saya
                 </h2>
 
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  {enrolledCourseList.map((courseInfo) => (
-                    <div
-                      key={courseInfo.id}
-                      className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-                    >
-                      <div className="flex gap-4">
+                {activeCourseList.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center">
+                    <PlayCircle size={32} className="mx-auto mb-3 text-gray-300" />
+                    <p className="text-sm font-semibold text-gray-400">Belum ada kursus aktif</p>
+                    <p className="text-xs text-gray-300 mt-1">Mulai kursus dari rekomendasi di bawah</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    {activeCourseList.map((courseInfo, idx) => {
+                      const accent = courseAccents[idx % courseAccents.length];
+                      const bgSoft = courseBgSofts[idx % courseBgSofts.length];
+                      const lastAccessedDate = new Date(courseInfo.lastAccessed);
+                      const now = new Date();
+                      const diffDays = Math.floor((now.getTime() - lastAccessedDate.getTime()) / (1000 * 60 * 60 * 24));
+                      const lastAccessedLabel = diffDays === 0 ? "Hari ini" : diffDays === 1 ? "Kemarin" : `${diffDays} hari lalu`;
+
+                      return (
                         <div
-                          className="flex h-16 w-16 items-center justify-center rounded-xl"
-                          style={{
-                            backgroundColor: courseInfo.bgSoft,
-                            color: courseInfo.accent,
-                          }}
+                          key={courseInfo.id}
+                          className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
                         >
-                          <BookOpen size={28} />
-                        </div>
-
-                        <div className="flex-1">
-                          <span className="mb-1 inline-block rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
-                            {courseInfo.platform}
-                          </span>
-
-                          <h3 className="mb-2 font-bold leading-tight text-gray-800">
-                            {courseInfo.title}
-                          </h3>
-
-                          <div className="mb-1 flex items-center justify-between text-xs font-bold">
-                            <span className="text-gray-500">
-                              Progress
-                            </span>
-
-                            <span
-                              style={{
-                                color: courseInfo.accent,
-                              }}
+                          <div className="flex gap-4">
+                            <div
+                              className="flex h-16 w-16 items-center justify-center rounded-xl shrink-0"
+                              style={{ backgroundColor: bgSoft, color: accent }}
                             >
-                              {courseInfo.progress}% selesai
-                            </span>
+                              <BookOpen size={28} />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <span className="mb-1 inline-block rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
+                                {courseInfo.platform}
+                              </span>
+
+                              <h3 className="mb-2 font-bold leading-tight text-gray-800 line-clamp-2">
+                                {courseInfo.title}
+                              </h3>
+
+                              <div className="mb-1 flex items-center justify-between text-xs font-bold">
+                                <span className="text-gray-500">Progress</span>
+                                <span style={{ color: accent }}>
+                                  {courseInfo.progress}% selesai
+                                </span>
+                              </div>
+
+                              <ProgressLine
+                                percentage={courseInfo.progress}
+                                accent={accent}
+                              />
+
+                              <p className="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400">
+                                <Clock size={10} />
+                                Terakhir diakses: {lastAccessedLabel}
+                              </p>
+                            </div>
                           </div>
 
-                          <ProgressLine
-                            percentage={courseInfo.progress}
-                            accent={courseInfo.accent}
-                          />
-
-                          <p className="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400">
-                            <Clock size={10} />
-
-                            Terakhir diakses:
-                            {courseInfo.lastAccessed}
-                          </p>
+                          <div className="mt-5 flex justify-end">
+                            <button
+                              className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
+                              style={{ background: `linear-gradient(135deg, ${accent}, ${accent}CC)` }}
+                            >
+                              Lanjutkan Belajar
+                              <ArrowRight size={14} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="mt-5 flex justify-end">
-                        <button
-                          className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:-translate-y-0.5"
-                          style={{
-                            background:
-                              "linear-gradient(135deg, #025CB8, #62AAEA)",
-                          }}
-                        >
-                          Lanjutkan Belajar
-
-                          <ArrowRight size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              {/* kursus rekomendasi — dari API */}
+              {recommendedCourseList.length > 0 && (
+                <div>
+                  <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-gray-800">
+                    <Star size={18} className="text-amber-500" />
+                    Kursus Rekomendasi
+                  </h2>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {recommendedCourseList.map((course, idx) => {
+                      const accent = courseAccents[idx % courseAccents.length];
+                      const badgeStyle = course.badge === "Direkomendasikan AI"
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "bg-green-100 text-green-700";
+
+                      return (
+                        <div
+                          key={course.id}
+                          className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                {course.category}
+                              </span>
+                              <h3 className="font-bold text-sm text-gray-800 leading-snug line-clamp-2 mt-0.5">
+                                {course.title}
+                              </h3>
+                            </div>
+                            {course.badge && (
+                              <span className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-bold ${badgeStyle}`}>
+                                {course.badge}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span className="font-semibold">{course.platform}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1">
+                                <Clock size={10} />
+                                {course.duration}
+                              </span>
+                              <span className="flex items-center gap-1 text-amber-600 font-bold">
+                                ★ {course.rating}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            className="w-full mt-4 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
+                            style={{ background: `linear-gradient(135deg, ${accent}, ${accent}CC)` }}
+                          >
+                            Mulai Belajar →
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="mx-auto max-w-2xl">
@@ -537,9 +581,18 @@ const ProfilKursus = () => {
                   {/* avatar */}
                   <div className="mb-8 flex flex-col items-center gap-6 sm:flex-row">
                     <div className="relative">
-                      {profileDetail?.profile?.avatarUrl ? (
+                      {/* Hidden file input untuk upload avatar */}
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                      />
+
+                      {avatarPreview || profileDetail?.profile?.avatarUrl ? (
                         <img
-                          src={profileDetail.profile.avatarUrl}
+                          src={avatarPreview || profileDetail!.profile!.avatarUrl!}
                           alt="Avatar"
                           className="h-24 w-24 rounded-full object-cover shadow-md"
                         />
@@ -559,7 +612,11 @@ const ProfilKursus = () => {
                         </div>
                       )}
 
-                      <button className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-200 hover:text-[#025CB8]">
+                      <button
+                        type="button"
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:border-blue-200 hover:text-[#025CB8]"
+                      >
                         <Camera size={14} />
                       </button>
                     </div>

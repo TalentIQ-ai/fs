@@ -145,17 +145,19 @@ const RoadmapKarir = () => {
     const needed = dashboardData?.neededSkills || [];
     const all = [...owned.slice(0, 3), ...needed.slice(0, 3)];
 
-    if (all.length === 0) {
-      return [
-        { label: "Analisis Data", current: 20, target: 80 },
-        { label: "SQL", current: 20, target: 80 },
-        { label: "Python", current: 20, target: 80 },
-      ];
-    }
+    // Jika tidak ada data skill sama sekali, return null — akan ditampilkan empty state
+    if (all.length === 0) return null;
+
+    // Hitung mastery ratio berdasarkan jumlah skill yang dimiliki vs total
+    const totalCount = Math.max(owned.length + needed.length, 1);
+    const masteryPct = Math.round((owned.length / totalCount) * 100);
+    // Clamp antara 10% - 90%
+    const clampedMastery = Math.min(Math.max(masteryPct, 10), 90);
+    const needGap = Math.max(10, clampedMastery - 35);
 
     return all.map((skill) => ({
       label: skill,
-      current: owned.includes(skill) ? 85 : 20,
+      current: owned.includes(skill) ? clampedMastery : needGap,
       target: 90,
       max: 100,
     }));
@@ -179,10 +181,23 @@ const RoadmapKarir = () => {
   const roadmapSummary = useMemo(() => {
     const doneCount = careerJourney.filter(({ state }) => state === "done").length;
     const activeCount = careerJourney.filter(({ state }) => state === "active").length;
+
+    // Hitung estimasi sisa waktu dari step yang belum done
+    const remainingWeeks = careerJourney
+      .filter(({ state }) => state !== "done")
+      .reduce((acc, step) => {
+        const match = step.estimate.match(/(\d+)/);
+        return acc + (match ? parseInt(match[1]) : 0);
+      }, 0);
+    const remainingMonths = remainingWeeks > 0
+      ? `${Math.ceil(remainingWeeks / 4)}`
+      : "0";
+
     return {
       total: careerJourney.length,
       done: doneCount,
       active: activeCount,
+      remainingMonths,
     };
   }, [careerJourney]);
 
@@ -253,7 +268,12 @@ const RoadmapKarir = () => {
                   {dreamRole}
                 </span>
                 {" · "}
-                Estimasi: 6-9 bulan
+                Estimasi:{" "}
+                <span className="font-semibold text-gray-600">
+                  {roadmapSummary.remainingMonths
+                    ? `${roadmapSummary.remainingMonths} bulan lagi`
+                    : "Selesai! 🎉"}
+                </span>
               </p>
             </div>
 
@@ -305,7 +325,7 @@ const RoadmapKarir = () => {
               },
               {
                 title: "Sisa Estimasi",
-                value: "5-7",
+                value: roadmapSummary.remainingMonths || "0",
                 suffix: " bln",
                 icon: (
                   <Clock
@@ -356,6 +376,30 @@ const RoadmapKarir = () => {
               </h2>
 
               <div className="relative pl-3 sm:pl-4">
+                {careerJourney.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                      style={{ background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)" }}
+                    >
+                      <BookOpen size={28} className="text-[#025CB8] opacity-50" />
+                    </div>
+                    <p className="text-sm font-bold text-gray-500 mb-1">
+                      Roadmap belum terbentuk
+                    </p>
+                    <p className="text-xs text-gray-400 leading-relaxed mb-5 max-w-xs">
+                      Upload CV atau isi data skill-mu agar AI bisa membuatkan rencana pengembangan yang personal
+                    </p>
+                    <button
+                      onClick={() => navigate("/auth/user-analisis-skill")}
+                      className="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #025CB8, #000000)" }}
+                    >
+                      Mulai Analisis CV →
+                    </button>
+                  </div>
+                ) : (
+                  <>
                 <div className="absolute top-2 bottom-6 left-[19px] sm:left-[23px] w-[2px] bg-gray-100" />
 
                 <div className="space-y-8 relative z-10">
@@ -512,6 +556,8 @@ const RoadmapKarir = () => {
                     );
                   })}
                 </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -527,68 +573,96 @@ const RoadmapKarir = () => {
                   Peta Skill Kamu Saat Ini
                 </h2>
 
-                <div className="relative h-[220px] w-full">
-                  <ResponsiveContainer
-                    width="100%"
-                    height="100%"
-                  >
-                    <RadarChart
-                      cx="50%"
-                      cy="50%"
-                      outerRadius="70%"
-                      data={skillRadar}
+                {skillRadar === null ? (
+                  /* Empty state — belum ada data skill */
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                      style={{ background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)" }}
                     >
-                      <PolarGrid stroke="#f3f4f6" />
-
-                      <PolarAngleAxis
-                        dataKey="label"
-                        tick={{
-                          fill: "#6b7280",
-                          fontSize: 10,
-                          fontWeight: 600,
-                        }}
-                      />
-
-                      <PolarRadiusAxis
-                        angle={30}
-                        domain={[0, 100]}
-                        tick={false}
-                        axisLine={false}
-                      />
-
-                      <Tooltip content={<RadarHint />} />
-
-                      <Radar
-                        name="Target"
-                        dataKey="target"
-                        stroke="#9ca3af"
-                        fill="#f3f4f6"
-                        fillOpacity={0.5}
-                        strokeDasharray="3 3"
-                      />
-
-                      <Radar
-                        name="Current"
-                        dataKey="current"
-                        stroke="#025CB8"
-                        fill="#62AAEA"
-                        fillOpacity={0.6}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="mt-2 flex items-center justify-center gap-4 text-[10px] font-semibold text-gray-500">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-sm bg-[#62AAEA] opacity-80" />
-                    <span>Saat Ini</span>
+                      <LineChart size={26} className="text-[#025CB8] opacity-50" />
+                    </div>
+                    <p className="text-sm font-bold text-gray-500 mb-1">
+                      Belum ada data skill
+                    </p>
+                    <p className="text-xs text-gray-400 leading-relaxed mb-4">
+                      Upload CV atau isi skill kamu dulu
+                      agar peta skill bisa terbentuk
+                    </p>
+                    <button
+                      onClick={() => navigate("/auth/user-analisis-skill")}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #025CB8, #000000)" }}
+                    >
+                      Upload CV Sekarang →
+                    </button>
                   </div>
+                ) : (
+                  <>
+                    <div className="relative h-[220px] w-full">
+                      <ResponsiveContainer
+                        width="100%"
+                        height="100%"
+                      >
+                        <RadarChart
+                          cx="50%"
+                          cy="50%"
+                          outerRadius="70%"
+                          data={skillRadar}
+                        >
+                          <PolarGrid stroke="#f3f4f6" />
 
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-sm border border-dashed border-gray-400 bg-gray-200" />
-                    <span>Target Ideal</span>
-                  </div>
-                </div>
+                          <PolarAngleAxis
+                            dataKey="label"
+                            tick={{
+                              fill: "#6b7280",
+                              fontSize: 10,
+                              fontWeight: 600,
+                            }}
+                          />
+
+                          <PolarRadiusAxis
+                            angle={30}
+                            domain={[0, 100]}
+                            tick={false}
+                            axisLine={false}
+                          />
+
+                          <Tooltip content={<RadarHint />} />
+
+                          <Radar
+                            name="Target"
+                            dataKey="target"
+                            stroke="#9ca3af"
+                            fill="#f3f4f6"
+                            fillOpacity={0.5}
+                            strokeDasharray="3 3"
+                          />
+
+                          <Radar
+                            name="Current"
+                            dataKey="current"
+                            stroke="#025CB8"
+                            fill="#62AAEA"
+                            fillOpacity={0.6}
+                          />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-center gap-4 text-[10px] font-semibold text-gray-500">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-sm bg-[#62AAEA] opacity-80" />
+                        <span>Saat Ini</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-sm border border-dashed border-gray-400 bg-gray-200" />
+                        <span>Target Ideal</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* rekomendasi */}

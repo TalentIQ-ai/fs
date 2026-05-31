@@ -10,9 +10,11 @@ import {
   Sparkles,
   Target,
   X,
+  Loader2,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getProfileService, UserWithProfile } from "@/services/profile.service";
 
 import Sidebar from "@/components/common/sidebar";
 
@@ -270,12 +272,164 @@ const CariLowongan = () => {
   const [keyword, setKeyword] = useState("");
   const [sidebarMini, setSidebarMini] = useState(false);
 
+  const [profileData, setProfileData] = useState<UserWithProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        const response = await getProfileService();
+        setProfileData(response.user);
+      } catch (err) {
+        console.error("Error fetching profile in job search:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const userSkills = useMemo(() => {
+    return profileData?.profile?.skills || ["Python", "SQL", "Excel"];
+  }, [profileData]);
+
+  const targetRole = useMemo(() => {
+    return profileData?.profile?.targetRole || "Data Analyst";
+  }, [profileData]);
+
+  const resolvedVacancies = useMemo(() => {
+    const defaultVacancies = [
+      {
+        id: 1,
+        role: `Junior ${targetRole}`,
+        companyName: "PT Tokopedia Tbk",
+        accentColor: "#42B549",
+        city: "Jakarta",
+        workMode: "Hybrid",
+        income: "Rp 8.000.000 – 12.000.000 / bulan",
+        requiredSkills: ["Python", "SQL", "Excel"],
+      },
+      {
+        id: 2,
+        role: targetRole,
+        companyName: "Gojek Indonesia",
+        accentColor: "#00AA13",
+        city: "Jakarta",
+        workMode: "WFO",
+        income: "Rp 10.000.000 – 15.000.000 / bulan",
+        requiredSkills: ["SQL", "Tableau", "Python"],
+      },
+      {
+        id: 3,
+        role: `${targetRole} Specialist`,
+        companyName: "Traveloka",
+        accentColor: "#1BA0E2",
+        city: "Tangerang",
+        workMode: "Remote",
+        income: "Rp 7.500.000 – 11.000.000 / bulan",
+        requiredSkills: ["Excel", "SQL", "Communication"],
+      },
+      {
+        id: 4,
+        role: `BI ${targetRole} (Junior)`,
+        companyName: "Shopee",
+        accentColor: "#EE4D2D",
+        city: "Jakarta",
+        workMode: "Hybrid",
+        income: "Rp 9.000.000 – 13.000.000 / bulan",
+        requiredSkills: ["SQL", "Python", "Power BI"],
+      },
+    ];
+
+    return defaultVacancies.map((vacancy) => {
+      const matched = vacancy.requiredSkills.filter((s) =>
+        userSkills.some((us) => us.toLowerCase() === s.toLowerCase())
+      );
+      const compatibility = Math.max(
+        30,
+        Math.round((matched.length / vacancy.requiredSkills.length) * 100)
+      );
+
+      return {
+        ...vacancy,
+        compatibility,
+        matchedStacks: matched.length > 0 ? matched : [vacancy.requiredSkills[0]],
+      };
+    });
+  }, [userSkills, targetRole]);
+
+  const resolvedFutureTargets = useMemo(() => {
+    const defaultFutureTargets = [
+      {
+        id: 11,
+        role: `Senior ${targetRole}`,
+        companyName: "Bank Jago",
+        accentColor: "#FF5A00",
+        city: "Jakarta",
+        workMode: "Hybrid",
+        income: "Rp 15.000.000 – 25.000.000 / bulan",
+        requiredSkills: ["Tableau", "Power BI", "A/B Testing"],
+      },
+      {
+        id: 12,
+        role: `${targetRole} Scientist`,
+        companyName: "Ruangguru",
+        accentColor: "#3B82F6",
+        city: "Remote",
+        workMode: "Remote",
+        income: "Rp 12.000.000 – 20.000.000 / bulan",
+        requiredSkills: ["Python", "SQL", "Machine Learning", "Scikit-learn"],
+      },
+      {
+        id: 13,
+        role: `Lead ${targetRole} Engineer`,
+        companyName: "Telkomsel",
+        accentColor: "#E3000F",
+        city: "Jakarta",
+        workMode: "WFO",
+        income: "Rp 14.000.000 – 22.000.000 / bulan",
+        requiredSkills: ["Python", "Deep Learning", "TensorFlow"],
+      },
+      {
+        id: 14,
+        role: `${targetRole} Developer`,
+        companyName: "Astra International",
+        accentColor: "#00529C",
+        city: "Jakarta",
+        workMode: "Hybrid",
+        income: "Rp 11.000.000 – 16.000.000 / bulan",
+        requiredSkills: ["SQL", "Excel", "Power BI", "Data Warehousing"],
+      },
+    ];
+
+    return defaultFutureTargets.map((vacancy) => {
+      const matched = vacancy.requiredSkills.filter((s) =>
+        userSkills.some((us) => us.toLowerCase() === s.toLowerCase())
+      );
+      const missing = vacancy.requiredSkills.filter(
+        (s) => !userSkills.some((us) => us.toLowerCase() === s.toLowerCase())
+      );
+      const compatibility = Math.max(
+        15,
+        Math.round((matched.length / vacancy.requiredSkills.length) * 100)
+      );
+
+      return {
+        ...vacancy,
+        compatibility,
+        currentSkills: matched.length > 0 ? matched : ["Excel"],
+        requiredSkills: missing.length > 0 ? missing : ["Communication"],
+      };
+    });
+  }, [userSkills, targetRole]);
+
   const filteredRecommendations = useMemo(() => {
-    if (!keyword.trim()) return recommendedVacancies;
+    if (!keyword.trim()) return resolvedVacancies;
 
     const normalized = keyword.toLowerCase();
 
-    return recommendedVacancies.filter((vacancy) => {
+    return resolvedVacancies.filter((vacancy) => {
       const searchableContent = [
         vacancy.role,
         vacancy.companyName,
@@ -287,7 +441,23 @@ const CariLowongan = () => {
 
       return searchableContent.includes(normalized);
     });
-  }, [keyword]);
+  }, [keyword, resolvedVacancies]);
+
+  const layoutShift = sidebarMini ? "lg:ml-[90px]" : "lg:ml-[260px]";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F9FC]">
+        <Sidebar collapsed={sidebarMini} setCollapsed={setSidebarMini} />
+        <main className={`pb-24 lg:pb-10 transition-all duration-300 ${layoutShift}`}>
+          <div className="min-h-[80vh] flex flex-col justify-center items-center">
+            <Loader2 className="animate-spin text-[#025CB8] mb-4" size={48} />
+            <p className="text-gray-500 font-semibold animate-pulse">Memuat rekomendasi lowongan kerja AI...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
@@ -376,7 +546,7 @@ const CariLowongan = () => {
                 Menampilkan 47 lowongan untuk:
                 <span className="text-[#025CB8]">
                   {" "}
-                  Data Analyst
+                  {targetRole}
                 </span>
               </p>
 
@@ -384,7 +554,7 @@ const CariLowongan = () => {
                 Berdasarkan skill kamu:
                 <span className="font-semibold text-gray-700">
                   {" "}
-                  Python, SQL, Excel
+                  {userSkills.join(", ")}
                 </span>
               </p>
             </div>
@@ -452,7 +622,7 @@ const CariLowongan = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {futureTargets.map((vacancy) => (
+              {resolvedFutureTargets.map((vacancy) => (
                 <JobCard
                   key={vacancy.id}
                   vacancy={vacancy}

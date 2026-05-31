@@ -9,8 +9,9 @@ import {
   Menu,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { getProfileService, UserWithProfile } from "@/services/profile.service";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface NavItem {
@@ -67,6 +68,37 @@ const Sidebar = ({
 }: SidebarProps) => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const [userProfile, setUserProfile] = useState<UserWithProfile | null>(null);
+
+  useEffect(() => {
+    const fetchSidebarProfile = async () => {
+      try {
+        const response = await getProfileService();
+        setUserProfile(response.user);
+      } catch (err) {
+        console.error("Error fetching sidebar profile:", err);
+      }
+    };
+    fetchSidebarProfile();
+  }, []);
+
+  const name = userProfile?.name || (() => {
+    const raw = localStorage.getItem("user");
+    if (raw) {
+      try { return JSON.parse(raw).name; } catch { return "User"; }
+    }
+    return "User";
+  })();
+
+  const role = userProfile?.profile?.targetRole || "Career Candidate";
+  const avatar = name
+    .trim()
+    .split(" ")
+    .slice(0, 2)
+    .map((word: string) => word[0])
+    .join("")
+    .toUpperCase() || "U";
 
   return (
     <>
@@ -214,16 +246,16 @@ const Sidebar = ({
                     "linear-gradient(135deg, #025CB8, #62AAEA)",
                 }}
               >
-                {mockUser.avatar}
+                {avatar}
               </div>
 
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 truncate">
-                  {mockUser.name}
+                  {name}
                 </p>
 
                 <p className="text-[11px] text-gray-400 truncate">
-                  {mockUser.role}
+                  {role}
                 </p>
               </div>
 
@@ -240,7 +272,7 @@ const Sidebar = ({
                     "linear-gradient(135deg, #025CB8, #62AAEA)",
                 }}
               >
-                {mockUser.avatar}
+                {avatar}
               </div>
             </div>
           )}

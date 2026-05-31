@@ -16,11 +16,12 @@ import {
   Zap,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Sidebar from "@/components/common/sidebar";
 import { animClass, useScrollAnimation } from "@/hooks/use-scroll-animation";
+import { getDashboardSummary, DashboardSummary } from "@/services/dashboard.service";
 
 // mock sementara
 const dashboardSnapshot = {
@@ -339,21 +340,152 @@ const Dashboard = () => {
   const [activeCard, setActiveCard] = useState<number | null>(null);
   const [sidebarShrink, setSidebarShrink] = useState(false);
 
-  const {
-    profile,
-    updatedAt,
-    jobReadyScore,
-    dreamRole,
-    masteredSkills,
-    missingSkills,
-    learningJourney,
-    highlightedSkills,
-  } = dashboardSnapshot;
+  const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        const data = await getDashboardSummary();
+        setDashboardData(data);
+      } catch (err: any) {
+        console.error("[Dashboard] Error fetching:", err);
+        setError("Gagal memuat analisis karir AI Anda. Pastikan server aktif.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
 
   const sidebarWidth = useMemo(
     () => (sidebarShrink ? "lg:ml-[90px]" : "lg:ml-[260px]"),
     [sidebarShrink]
   );
+
+  // Map API data to expected variables
+  const name = dashboardData?.user?.name || "User";
+  const firstName = name.split(" ")[0];
+  const completeName = name;
+
+  const profile = useMemo(() => ({
+    firstName,
+    completeName
+  }), [firstName, completeName]);
+
+  const updatedAt = dashboardData?.lastUpdated || "Baru saja";
+  const jobReadyScore = dashboardData?.readinessScore ?? 0;
+  const dreamRole = dashboardData?.targetRole || "Belum ditentukan";
+
+  const masteredSkills = dashboardData?.ownedSkills || [];
+  const missingSkills = dashboardData?.neededSkills || [];
+
+  const learningJourney = useMemo(() => {
+    if (!dashboardData?.roadmap || dashboardData.roadmap.length === 0) {
+      return [];
+    }
+    return dashboardData.roadmap.map((step) => ({
+      id: step.id,
+      title: step.title,
+      state: step.status === "upcoming" ? "later" : (step.status as any),
+      estimate: step.duration,
+      progress: step.progress,
+    }));
+  }, [dashboardData]);
+
+  const highlightedSkills = useMemo(() => {
+    if (!dashboardData?.prioritySkills || dashboardData.prioritySkills.length === 0) {
+      return [];
+    }
+    return dashboardData.prioritySkills.map((ps) => {
+      let icon = <Brain size={22} />;
+      if (ps.name === "Tableau") icon = <TrendingUp size={22} />;
+      else if (ps.name === "Power BI") icon = <Database size={22} />;
+
+      return {
+        id: ps.id,
+        label: ps.name,
+        icon,
+        demand: ps.reason || `Dibutuhkan untuk ${dreamRole}`,
+        percentage: ps.relevance,
+        accent: ps.color || "#025CB8",
+        soft: ps.bg || "#EFF6FF",
+      };
+    });
+  }, [dashboardData, dreamRole]);
+
+  const coursesToRender = useMemo(() => {
+    if (!dashboardData?.recommendedCourses || dashboardData.recommendedCourses.length === 0) {
+      return suggestedCourses;
+    }
+    return dashboardData.recommendedCourses.map((course) => {
+      let accent = "#025CB8";
+      if (course.category === "Visualisasi Data") accent = "#4F46E5";
+      else if (course.category === "Machine Learning") accent = "#10B981";
+      else if (course.category === "Database") accent = "#EF4444";
+
+      return {
+        id: course.id,
+        title: course.title,
+        field: course.category,
+        source: course.platform,
+        duration: course.duration,
+        rating: course.rating,
+        tag: course.badge || "",
+        tagStyle: course.badge === "Direkomendasikan AI" ? "bg-indigo-100 text-indigo-700" : "bg-green-100 text-green-700",
+        accent,
+      };
+    });
+  }, [dashboardData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F9FC]">
+        <Sidebar
+          collapsed={sidebarShrink}
+          setCollapsed={setSidebarShrink}
+        />
+        <main
+          className={`pb-24 pt-[72px] transition-all duration-300 lg:pb-8 lg:pt-0 ${sidebarWidth}`}
+        >
+          <div className="min-h-[80vh] flex flex-col justify-center items-center">
+            <Loader2 className="animate-spin text-[#025CB8] mb-4" size={48} />
+            <p className="text-gray-500 font-semibold animate-pulse">Memasang modul AI & memuat analisis karir...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F7F9FC]">
+        <Sidebar
+          collapsed={sidebarShrink}
+          setCollapsed={setSidebarShrink}
+        />
+        <main
+          className={`pb-24 pt-[72px] transition-all duration-300 lg:pb-8 lg:pt-0 ${sidebarWidth}`}
+        >
+          <div className="min-h-[80vh] flex flex-col justify-center items-center p-6 text-center">
+            <div className="bg-red-50 text-red-500 px-6 py-4 rounded-2xl border border-red-200 max-w-md shadow-sm">
+              <h3 className="font-bold text-lg mb-2">Terjadi Kesalahan</h3>
+              <p className="text-sm mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-[#025CB8] hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold"
+              >
+                Coba Lagi
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
@@ -401,6 +533,45 @@ const Dashboard = () => {
         </div>
 
         <div className="mx-auto w-full max-w-7xl space-y-7 px-4 pt-6 sm:px-5 sm:pt-7 lg:px-8">
+          {/* Banner jika belum menentukan target role */}
+          {dreamRole === "Belum ditentukan" && (
+            <FadeSection>
+              <div className="rounded-2xl border border-blue-100 p-6 shadow-md bg-gradient-to-r from-blue-50 to-indigo-50 relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+                <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-blue-200/20 -mr-10 -mt-10" />
+                <div className="absolute left-1/3 bottom-0 h-24 w-24 rounded-full bg-indigo-200/20 -mb-10" />
+                
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md text-[#025CB8] shrink-0">
+                  <Brain size={32} className="animate-pulse" />
+                </div>
+                
+                <div className="flex-1 text-center md:text-left relative z-10">
+                  <h3 className="text-lg font-black text-gray-800 mb-1">
+                    Mulai Perjalanan Karir AI Anda! 🚀
+                  </h3>
+                  <p className="text-sm text-gray-500 max-w-xl">
+                    Anda belum menentukan target karir atau mengunggah CV. 
+                    Unggah CV atau pilih target role Anda sekarang untuk mendapatkan analisis kesiapan kerja, peta belajar, dan rekomendasi kursus berbasis AI.
+                  </p>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0 relative z-10">
+                  <button
+                    onClick={() => navigate("/profil")}
+                    className="bg-[#025CB8] hover:bg-blue-700 text-white text-sm font-bold px-6 py-3 rounded-xl transition shadow-md shadow-blue-500/20 text-center"
+                  >
+                    Tentukan Target Karir
+                  </button>
+                  <button
+                    onClick={() => navigate("/auth/user-analisis-skill")}
+                    className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-sm font-bold px-6 py-3 rounded-xl transition shadow-sm text-center"
+                  >
+                    Upload & Scan CV
+                  </button>
+                </div>
+              </div>
+            </FadeSection>
+          )}
+
           {/* cards */}
           <FadeSection>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -837,7 +1008,7 @@ const Dashboard = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {suggestedCourses.map((courseItem) => (
+                {coursesToRender.map((courseItem) => (
                   <div
                     key={courseItem.id}
                     className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
@@ -962,7 +1133,7 @@ const Dashboard = () => {
               {/* belajar */}
               <div
                 onClick={() =>
-                  navigate("/auth/analisis-skill")
+                  navigate("/auth/user-analisis-skill")
                 }
                 className="group relative cursor-pointer overflow-hidden rounded-2xl p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                 style={{

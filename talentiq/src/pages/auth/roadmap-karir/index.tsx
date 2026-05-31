@@ -17,7 +17,8 @@ import {
   Trophy,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -29,68 +30,7 @@ import {
 } from "recharts";
 
 import Sidebar from "@/components/common/sidebar";
-
-// data dummy dulu
-const skillRadar = [
-  { label: "Analisis Data", current: 70, target: 90, max: 100 },
-  { label: "Visualisasi", current: 40, target: 85, max: 100 },
-  { label: "Machine Learning", current: 20, target: 70, max: 100 },
-  { label: "SQL", current: 80, target: 95, max: 100 },
-  { label: "Python", current: 65, target: 90, max: 100 },
-];
-
-const careerJourney = [
-  {
-    step: 1,
-    title: "Fondasi Data",
-    state: "done",
-    estimate: "Selesai dalam 6 minggu",
-    stack: ["Python Dasar", "SQL Dasar", "Statistika Dasar"],
-    finishedCourse: 2,
-    detail:
-      "Membangun pemahaman dasar tentang pengolahan data dan logika pemrograman.",
-    icon: <Database size={19} />,
-  },
-  {
-    step: 2,
-    title: "Analisis Data",
-    state: "active",
-    estimate: "3 minggu lagi",
-    progress: 65,
-    stack: ["SQL Lanjutan", "Pandas", "NumPy"],
-    currentCourse: "Data Manipulation with Python",
-    detail:
-      "Mengolah dan membersihkan dataset menggunakan library manipulasi data.",
-    icon: <FileCode2 size={19} />,
-  },
-  {
-    step: 3,
-    title: "Visualisasi Data",
-    state: "next",
-    estimate: "Estimasi: 4 minggu",
-    stack: ["Tableau", "Power BI", "Matplotlib"],
-    suggestedCourse: 3,
-    detail:
-      "Membuat dashboard interaktif dan menyampaikan insight secara visual.",
-    icon: <LineChart size={19} />,
-  },
-  {
-    step: 4,
-    title: "Machine Learning Dasar",
-    state: "locked",
-    estimate: "Estimasi: 6 minggu",
-    stack: ["Scikit-learn", "Regresi", "Klasifikasi"],
-    detail:
-      "Membangun model prediktif dasar untuk menyelesaikan masalah bisnis.",
-    icon: <BrainCircuit size={19} />,
-  },
-];
-
-const aiSuggestions = [
-  "Selesaikan modul 'Data Manipulation with Python' di kursus aktif saat ini.",
-  "Mulai biasakan diri mengerjakan dataset sederhana dari Kaggle (misal: Titanic).",
-  "Buat 1 proyek analisis data portofolio menggunakan dataset terbuka pemerintah.",
-];
+import { getDashboardSummary, DashboardSummary } from "@/services/dashboard.service";
 
 // mini component
 const SkillProgress = ({ percent }: { percent: number }) => (
@@ -129,27 +69,160 @@ const RadarHint = ({ active, payload }: any) => {
 };
 
 const RoadmapKarir = () => {
+  const navigate = useNavigate();
   const [sidebarMini, setSidebarMini] = useState(false);
 
+  const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        const data = await getDashboardSummary();
+        setDashboardData(data);
+      } catch (err: any) {
+        console.error("[Roadmap] Error fetching:", err);
+        setError("Gagal memuat peta karir. Pastikan server aktif.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  const dreamRole = dashboardData?.targetRole || "Belum ditentukan";
+
+  const careerJourney = useMemo(() => {
+    if (!dashboardData?.roadmap || dashboardData.roadmap.length === 0) {
+      return [];
+    }
+    return dashboardData.roadmap.map((step) => {
+      let stack: string[] = [];
+      let detail = "";
+      let icon = <Database size={19} />;
+
+      if (step.title.toLowerCase().includes("python")) {
+        stack = ["Python Dasar", "Pandas", "NumPy"];
+        detail = "Membangun pemahaman dasar tentang logika pemrograman dan manipulasi dataset.";
+        icon = <FileCode2 size={19} />;
+      } else if (step.title.toLowerCase().includes("sql")) {
+        stack = ["SQL Dasar", "SQL Lanjutan", "Database"];
+        detail = "Menguasai query database relational untuk ekstraksi data terstruktur.";
+        icon = <Database size={19} />;
+      } else if (step.title.toLowerCase().includes("visualisasi") || step.title.toLowerCase().includes("tableau") || step.title.toLowerCase().includes("bi")) {
+        stack = ["Tableau", "Power BI", "Matplotlib"];
+        detail = "Membuat dashboard interaktif dan menyampaikan insight secara visual.";
+        icon = <LineChart size={19} />;
+      } else if (step.title.toLowerCase().includes("machine learning") || step.title.toLowerCase().includes("ml")) {
+        stack = ["Scikit-learn", "Regresi", "Klasifikasi"];
+        detail = "Membangun model prediktif dasar untuk menyelesaikan masalah bisnis.";
+        icon = <BrainCircuit size={19} />;
+      } else {
+        stack = ["General Skill"];
+        detail = "Rencana pengembangan skill untuk menunjang karir Anda.";
+      }
+
+      return {
+        step: step.order,
+        title: step.title,
+        state: step.status === "upcoming" ? "locked" : (step.status as any),
+        estimate: step.status === "done" ? "Selesai" : step.duration,
+        progress: step.progress,
+        stack,
+        detail,
+        icon,
+        currentCourse: step.status === "active" ? "Kursus Aktif" : undefined,
+        finishedCourse: step.status === "done" ? 1 : 0,
+        suggestedCourse: step.status === "next" ? 2 : 0,
+      };
+    });
+  }, [dashboardData]);
+
+  const skillRadar = useMemo(() => {
+    const owned = dashboardData?.ownedSkills || [];
+    const needed = dashboardData?.neededSkills || [];
+    const all = [...owned.slice(0, 3), ...needed.slice(0, 3)];
+
+    if (all.length === 0) {
+      return [
+        { label: "Analisis Data", current: 20, target: 80 },
+        { label: "SQL", current: 20, target: 80 },
+        { label: "Python", current: 20, target: 80 },
+      ];
+    }
+
+    return all.map((skill) => ({
+      label: skill,
+      current: owned.includes(skill) ? 85 : 20,
+      target: 90,
+      max: 100,
+    }));
+  }, [dashboardData]);
+
+  const aiSuggestions = useMemo(() => {
+    const needed = dashboardData?.neededSkills || [];
+    if (needed.length === 0) {
+      return [
+        "Profil Anda sudah optimal! Mulai lamar pekerjaan di tab Cari Lowongan.",
+        "Pertahankan konsistensi belajar Anda setiap hari.",
+      ];
+    }
+    return [
+      `Fokus mempelajari skill prioritas: ${needed[0]}.`,
+      needed[1] ? `Pelajari dasar-dasar ${needed[1]} untuk menunjang pengerjaan proyek.` : "Buat proyek portofolio sederhana menggunakan dataset publik.",
+      "Tingkatkan skor kesiapan kerja Anda dengan menyelesaikan kursus rekomendasi.",
+    ];
+  }, [dashboardData]);
+
   const roadmapSummary = useMemo(() => {
-    const doneCount = careerJourney.filter(
-      ({ state }) => state === "done"
-    ).length;
-
-    const activeCount = careerJourney.filter(
-      ({ state }) => state === "active"
-    ).length;
-
+    const doneCount = careerJourney.filter(({ state }) => state === "done").length;
+    const activeCount = careerJourney.filter(({ state }) => state === "active").length;
     return {
       total: careerJourney.length,
       done: doneCount,
       active: activeCount,
     };
-  }, []);
+  }, [careerJourney]);
 
-  const layoutShift = sidebarMini
-    ? "lg:ml-[90px]"
-    : "lg:ml-[260px]";
+  const layoutShift = sidebarMini ? "lg:ml-[90px]" : "lg:ml-[260px]";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F9FC]">
+        <Sidebar collapsed={sidebarMini} setCollapsed={setSidebarMini} />
+        <main className={`pb-24 lg:pb-10 transition-all duration-300 ${layoutShift}`}>
+          <div className="min-h-[80vh] flex flex-col justify-center items-center">
+            <Loader2 className="animate-spin text-[#025CB8] mb-4" size={48} />
+            <p className="text-gray-500 font-semibold animate-pulse">Memuat analisis peta jalan karir AI Anda...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F7F9FC]">
+        <Sidebar collapsed={sidebarMini} setCollapsed={setSidebarMini} />
+        <main className={`pb-24 lg:pb-10 transition-all duration-300 ${layoutShift}`}>
+          <div className="min-h-[80vh] flex flex-col justify-center items-center p-6 text-center">
+            <div className="bg-red-50 text-red-500 px-6 py-4 rounded-2xl border border-red-200 max-w-md shadow-sm">
+              <h3 className="font-bold text-lg mb-2">Terjadi Kesalahan</h3>
+              <p className="text-sm mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-[#025CB8] hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold"
+              >
+                Coba Lagi
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F9FC]">
@@ -177,14 +250,17 @@ const RoadmapKarir = () => {
                 Berdasarkan analisis AI · Target:
                 <span className="font-semibold text-gray-600">
                   {" "}
-                  Data Analyst
+                  {dreamRole}
                 </span>
                 {" · "}
                 Estimasi: 6-9 bulan
               </p>
             </div>
 
-            <button className="self-start sm:self-auto px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#025CB8] hover:border-blue-200 transition">
+            <button
+              onClick={() => navigate("/profil")}
+              className="self-start sm:self-auto px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-[#025CB8] hover:border-blue-200 transition"
+            >
               Ubah Target Karir
             </button>
           </div>

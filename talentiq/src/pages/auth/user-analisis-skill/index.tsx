@@ -82,28 +82,16 @@ const industryChoices = [
   "Pemerintahan",
 ];
 
-const skillChoices = [
-  "HTML",
-  "CSS",
-  "JavaScript",
-  "TypeScript",
-  "React",
-  "Next.js",
-  "Node.js",
-  "Express",
-  "Laravel",
-  "PHP",
-  "Python",
-  "Java",
-  "SQL",
-  "PostgreSQL",
-  "MongoDB",
-  "Git",
-  "Figma",
-  "UI/UX",
-  "Public Speaking",
-  "Leadership",
-];
+const SKILLS_BY_INDUSTRY: Record<string, string[]> = {
+  "Teknologi": ["HTML", "CSS", "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Express", "Laravel", "PHP", "Python", "Java", "SQL", "PostgreSQL", "MongoDB", "Git", "Figma", "UI/UX"],
+  "Keuangan": ["Accounting", "Financial Modeling", "SAP", "ERP", "Audit", "Excel", "Data Analysis", "Statistics", "Power BI", "Tableau", "Market Research", "Problem Solving"],
+  "Kesehatan": ["Healthcare Admin", "Medical Coding", "Public Health", "Communication", "Problem Solving", "Teamwork", "Attention to Detail", "Time Management"],
+  "E-Commerce": ["Digital Marketing", "SEO", "SEM", "Google Ads", "Meta Ads", "Content Marketing", "Social Media", "CRM", "Sales", "Business Development", "Google Analytics"],
+  "Pendidikan": ["Teaching", "Curriculum Design", "Public Speaking", "Communication", "Leadership", "Notion", "Trello", "English Proficiency"],
+  "Manufaktur": ["Operations", "Supply Chain", "Quality Control", "SAP", "ERP", "Project Management", "Agile", "Problem Solving"],
+  "Media & Kreatif": ["Figma", "Adobe Photoshop", "Adobe Illustrator", "Adobe Premiere Pro", "Canva", "Graphic Design", "Illustration", "Video Editing", "Content Creation", "UI/UX", "Creativity"],
+  "Pemerintahan": ["Policy Analysis", "Public Administration", "Research", "Stakeholder Management", "Communication", "Negotiation", "Leadership"]
+};
 
 const TARGET_CATEGORIES = [
   "Software Engineer",
@@ -282,13 +270,15 @@ const CareerLevelSelector = ({
 const SkillPicker = ({
   selectedSkills,
   onUpdate,
+  availableSkills,
 }: {
   selectedSkills: string[];
   onUpdate: (next: string[]) => void;
+  availableSkills: string[];
 }) => {
   return (
     <div className="flex flex-wrap gap-2 mt-2">
-      {skillChoices.map((skillName) => {
+      {availableSkills.map((skillName) => {
         const checked =
           selectedSkills.includes(skillName);
 
@@ -520,6 +510,19 @@ const AnalisisSkill = () => {
   const [selectedSkillTags, setSelectedSkillTags] =
     useState<string[]>([]);
 
+  const availableSkills = useMemo(() => {
+    if (preferredIndustries.length === 0) {
+      // Fallback: gabungan seluruh skill
+      return Array.from(new Set(Object.values(SKILLS_BY_INDUSTRY).flat()));
+    }
+    const skillsSet = new Set<string>();
+    preferredIndustries.forEach((ind) => {
+      const skills = SKILLS_BY_INDUSTRY[ind] || [];
+      skills.forEach((s) => skillsSet.add(s));
+    });
+    return Array.from(skillsSet);
+  }, [preferredIndustries]);
+
   const verifyFile = useCallback(
     (incomingFile: File) => {
       setUploadError(null);
@@ -607,14 +610,10 @@ const AnalisisSkill = () => {
     setUploadError(null);
 
     try {
-      await Promise.all([
-        analyzeCvService(cvFile, careerTarget).then((response) => {
-          const { profile } = response.data;
-          setCareerLevel((profile.experienceLevel as CareerLevel) || "fresh");
-          setSelectedSkillTags(profile.skills || []);
-        }),
-        new Promise((resolve) => setTimeout(resolve, 2000)) // 2 detik minimal untuk animasi
-      ]);
+      const response = await analyzeCvService(cvFile, careerTarget);
+      const { profile } = response.data;
+      setCareerLevel((profile.experienceLevel as CareerLevel) || "fresh");
+      setSelectedSkillTags(profile.skills || []);
       
       setAnalysisState("success");
     } catch (error: any) {
@@ -924,9 +923,13 @@ const AnalisisSkill = () => {
                         />
 
                         <h2 className="font-bold text-gray-700">
-                          Informasi Tambahan
+                          Lengkapi Profil Secara Manual (CV Gagal Terbaca)
                         </h2>
                       </div>
+
+                      <p className="text-sm text-gray-500 leading-relaxed">
+                        Silakan lengkapi informasi berikut agar kami tetap bisa menyusun rekomendasi karir dan analisis kesiapan kerja Anda secara akurat.
+                      </p>
 
                       <div>
                         <label className="text-xs font-semibold text-gray-600">
@@ -987,6 +990,9 @@ const AnalisisSkill = () => {
                           }
                           onUpdate={
                             setSelectedSkillTags
+                          }
+                          availableSkills={
+                            availableSkills
                           }
                         />
                       </div>

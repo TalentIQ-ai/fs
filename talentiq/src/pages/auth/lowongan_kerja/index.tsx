@@ -54,7 +54,13 @@ const JobCard = ({
 
           <div>
             <h3
-              className={`font-bold text-base transition-colors text-gray-800
+              onClick={() => {
+                if (vacancy.url) {
+                  window.open(vacancy.url, "_blank", "noopener,noreferrer");
+                }
+              }}
+              title={vacancy.url ? "Klik untuk melihat detail lowongan" : undefined}
+              className={`font-bold text-base transition-colors text-gray-800 cursor-pointer hover:underline
                 ${isFutureRole
                   ? "group-hover:text-orange-600"
                   : "group-hover:text-[#025CB8]"
@@ -142,6 +148,17 @@ const JobCard = ({
 
       <div className="flex items-center gap-3 mt-6 relative z-10">
         <button
+          onClick={() => {
+            if (isFutureRole) {
+              window.location.href = "/auth/roadmap-karir";
+            } else {
+              if (vacancy.url) {
+                window.open(vacancy.url, "_blank", "noopener,noreferrer");
+              } else {
+                alert("URL lowongan tidak tersedia.");
+              }
+            }
+          }}
           className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95
             ${isFutureRole
               ? "bg-white border-2 border-orange-500 text-orange-600 hover:bg-orange-50"
@@ -153,6 +170,17 @@ const JobCard = ({
             ? "Lihat Kursus yang Dibutuhkan"
             : "Lamar Sekarang"}
         </button>
+
+        {isFutureRole && vacancy.url && (
+          <button
+            onClick={() => {
+              window.open(vacancy.url, "_blank", "noopener,noreferrer");
+            }}
+            className="px-4 py-2.5 rounded-xl border-2 border-orange-500 text-orange-600 hover:bg-orange-50 text-sm font-bold transition-colors active:scale-95"
+          >
+            Lihat Lowongan
+          </button>
+        )}
 
         <button
           className={`p-2.5 rounded-xl border-2 transition-colors

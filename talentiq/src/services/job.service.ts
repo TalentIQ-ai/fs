@@ -11,6 +11,7 @@ export interface JobVacancy {
   compatibility: number;
   matchedStacks: string[];
   missingStacks: string[];
+  url?: string;
 }
 
 export const getJobs = async (category?: string, keyword?: string): Promise<JobVacancy[]> => {

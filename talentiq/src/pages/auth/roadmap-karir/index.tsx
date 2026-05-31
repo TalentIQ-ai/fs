@@ -124,9 +124,16 @@ const RoadmapKarir = () => {
         detail = "Rencana pengembangan skill untuk menunjang karir Anda.";
       }
 
+      let displayTitle = step.title;
+      const match = step.title.match(/^(Minggu\s+\d+):\s*(.*)$/i);
+      if (match) {
+        displayTitle = match[2];
+        displayTitle = displayTitle.charAt(0).toUpperCase() + displayTitle.slice(1);
+      }
+
       return {
         step: step.order,
-        title: step.title,
+        title: displayTitle,
         state: step.status === "upcoming" ? "locked" : (step.status as any),
         estimate: step.status === "done" ? "Selesai" : step.duration,
         progress: step.progress,
@@ -143,7 +150,25 @@ const RoadmapKarir = () => {
   const skillRadar = useMemo(() => {
     const owned = dashboardData?.ownedSkills || [];
     const needed = dashboardData?.neededSkills || [];
-    const all = [...owned.slice(0, 3), ...needed.slice(0, 3)];
+    
+    let radarOwned = owned;
+    let radarNeeded = needed;
+    
+    if (owned.length > 4 && needed.length > 4) {
+       radarOwned = owned.slice(0, 4);
+       radarNeeded = needed.slice(0, 4);
+    } else if (owned.length <= 4) {
+       radarNeeded = needed.slice(0, 8 - owned.length);
+    } else {
+       radarOwned = owned.slice(0, 8 - needed.length);
+    }
+    
+    // Gabungkan, pastikan minimal 3 skill untuk membentuk polygon radar
+    let all = [...radarOwned, ...radarNeeded];
+    if (all.length > 0 && all.length < 3) {
+      // Jika kurang dari 3, pad dengan string kosong agar chart tetap tergambar
+      while(all.length < 3) all.push(`Skill ${all.length + 1}`);
+    }
 
     // Jika tidak ada data skill sama sekali, return null — akan ditampilkan empty state
     if (all.length === 0) return null;

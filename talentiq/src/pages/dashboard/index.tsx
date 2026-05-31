@@ -393,13 +393,23 @@ const Dashboard = () => {
     if (!dashboardData?.roadmap || dashboardData.roadmap.length === 0) {
       return [];
     }
-    return dashboardData.roadmap.map((step) => ({
-      id: step.id,
-      title: step.title,
-      state: step.status === "upcoming" ? "later" : (step.status as any),
-      estimate: step.duration,
-      progress: step.progress,
-    }));
+    return dashboardData.roadmap.map((step) => {
+      let displayTitle = step.title;
+      // Remove "Minggu X: " prefix from the AI output because we already have duration info
+      const match = step.title.match(/^(Minggu\s+\d+):\s*(.*)$/i);
+      if (match) {
+        displayTitle = match[2];
+        displayTitle = displayTitle.charAt(0).toUpperCase() + displayTitle.slice(1);
+      }
+
+      return {
+        id: step.id,
+        title: displayTitle,
+        state: step.status === "upcoming" ? "later" : (step.status as any),
+        estimate: step.duration,
+        progress: step.progress,
+      };
+    });
   }, [dashboardData]);
 
   // Mapping ikon berdasarkan kategori keyword — bukan nama persis
@@ -556,21 +566,21 @@ const Dashboard = () => {
               <div className="rounded-2xl border border-blue-100 p-6 shadow-md bg-gradient-to-r from-blue-50 to-indigo-50 relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
                 <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-blue-200/20 -mr-10 -mt-10" />
                 <div className="absolute left-1/3 bottom-0 h-24 w-24 rounded-full bg-indigo-200/20 -mb-10" />
-                
+
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md text-[#025CB8] shrink-0">
                   <Brain size={32} className="animate-pulse" />
                 </div>
-                
+
                 <div className="flex-1 text-center md:text-left relative z-10">
                   <h3 className="text-lg font-black text-gray-800 mb-1">
                     Mulai Perjalanan Karir AI Anda! 🚀
                   </h3>
                   <p className="text-sm text-gray-500 max-w-xl">
-                    Anda belum menentukan target karir atau mengunggah CV. 
+                    Anda belum menentukan target karir atau mengunggah CV.
                     Unggah CV atau pilih target role Anda sekarang untuk mendapatkan analisis kesiapan kerja, peta belajar, dan rekomendasi kursus berbasis AI.
                   </p>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0 relative z-10">
                   <button
                     onClick={() => navigate("/profil")}
@@ -701,7 +711,7 @@ const Dashboard = () => {
                 )}
               </div>
 
-                {/* readiness */}
+              {/* readiness */}
               <div
                 className="flex flex-col items-center justify-center rounded-2xl border border-blue-100 p-5 shadow-sm transition hover:shadow-md"
                 style={{
@@ -849,66 +859,69 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <>
-                  {learningJourney.map((phase, index) => {
-                    const currentStep =
-                      roadmapState[
-                      phase.state as keyof typeof roadmapState
-                      ];
+                    {learningJourney.map((phase, index) => {
+                      const currentStep =
+                        roadmapState[
+                        phase.state as keyof typeof roadmapState
+                        ];
 
-                    const lastIndex =
-                      index === learningJourney.length - 1;
+                      const lastIndex =
+                        index === learningJourney.length - 1;
 
-                    return (
-                      <div
-                        key={phase.id}
-                        className="relative flex flex-1 flex-col items-center"
-                      >
-                        {!lastIndex && (
-                          <div
-                            className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${phase.state === "done"
+                      return (
+                        <div
+                          key={phase.id}
+                          className="relative flex flex-1 basis-0 flex-col items-center"
+                        >
+                          {!lastIndex && (
+                            <div
+                              className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${phase.state === "done"
                                 ? "bg-green-300"
                                 : "bg-gray-200"
-                              }`}
-                          />
-                        )}
+                                }`}
+                            />
+                          )}
 
-                        <div
-                          className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
-                        >
-                          {currentStep.icon}
-                        </div>
-
-                        <div className="mt-3 px-1 text-center">
-                          <p
-                            className={`mb-0.5 text-[11px] font-bold ${currentStep.text}`}
+                          <div
+                            className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
                           >
-                            {currentStep.label}
-                          </p>
+                            {currentStep.icon}
+                          </div>
 
-                          <p className="whitespace-pre-line text-xs font-semibold leading-snug text-gray-700">
-                            {phase.title}
-                          </p>
+                          <div className="mt-3 px-1 text-center max-w-[130px] mx-auto">
+                            <p
+                              className={`mb-0.5 text-[11px] font-bold ${currentStep.text}`}
+                            >
+                              {currentStep.label}
+                            </p>
 
-                          <p className="mt-1 text-[10px] text-gray-400">
-                            {phase.estimate}
-                          </p>
+                            <p
+                              className="whitespace-normal text-xs font-semibold leading-snug text-gray-700 line-clamp-3"
+                              title={phase.title}
+                            >
+                              {phase.title}
+                            </p>
 
-                          {phase.state === "active" &&
-                            phase.progress && (
-                              <div className="mt-2 w-full px-2">
-                                <MiniBar
-                                  value={phase.progress}
-                                />
+                            <p className="mt-1 text-[10px] text-gray-400">
+                              {phase.estimate}
+                            </p>
 
-                                <p className="mt-1 text-[10px] font-semibold text-[#025CB8]">
-                                  {phase.progress}% selesai
-                                </p>
-                              </div>
-                            )}
+                            {phase.state === "active" &&
+                              phase.progress && (
+                                <div className="mt-2 w-full px-2">
+                                  <MiniBar
+                                    value={phase.progress}
+                                  />
+
+                                  <p className="mt-1 text-[10px] font-semibold text-[#025CB8]">
+                                    {phase.progress}% selesai
+                                  </p>
+                                </div>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </>
                 )}
               </div>
@@ -928,66 +941,66 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <>
-                  {learningJourney.map((phase, index) => {
-                    const currentStep =
-                      roadmapState[
-                      phase.state as keyof typeof roadmapState
-                      ];
+                    {learningJourney.map((phase, index) => {
+                      const currentStep =
+                        roadmapState[
+                        phase.state as keyof typeof roadmapState
+                        ];
 
-                    const lastIndex =
-                      index === learningJourney.length - 1;
+                      const lastIndex =
+                        index === learningJourney.length - 1;
 
-                    return (
-                      <div
-                        key={phase.id}
-                        className="relative flex items-start gap-3"
-                      >
-                        {!lastIndex && (
-                          <div
-                            className={`absolute bottom-[-16px] left-[19px] top-10 w-0.5 ${phase.state === "done"
+                      return (
+                        <div
+                          key={phase.id}
+                          className="relative flex items-start gap-3"
+                        >
+                          {!lastIndex && (
+                            <div
+                              className={`absolute bottom-[-16px] left-[19px] top-10 w-0.5 ${phase.state === "done"
                                 ? "bg-green-200"
                                 : "bg-gray-200"
-                              }`}
-                          />
-                        )}
+                                }`}
+                            />
+                          )}
 
-                        <div
-                          className={`z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
-                        >
-                          {currentStep.icon}
-                        </div>
-
-                        <div className="flex-1 pb-2">
-                          <span
-                            className={`text-[11px] font-bold ${currentStep.text}`}
+                          <div
+                            className={`z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
                           >
-                            {currentStep.label}
-                          </span>
+                            {currentStep.icon}
+                          </div>
 
-                          <p className="whitespace-pre-line text-sm font-semibold leading-snug text-gray-700">
-                            {phase.title}
-                          </p>
+                          <div className="flex-1 pb-2">
+                            <span
+                              className={`text-[11px] font-bold ${currentStep.text}`}
+                            >
+                              {currentStep.label}
+                            </span>
 
-                          <p className="text-xs text-gray-400">
-                            {phase.estimate}
-                          </p>
+                            <p className="whitespace-pre-line text-sm font-semibold leading-snug text-gray-700">
+                              {phase.title}
+                            </p>
 
-                          {phase.state === "active" &&
-                            phase.progress && (
-                              <div className="mt-2">
-                                <MiniBar
-                                  value={phase.progress}
-                                />
+                            <p className="text-xs text-gray-400">
+                              {phase.estimate}
+                            </p>
 
-                                <p className="mt-1 text-xs font-semibold text-[#025CB8]">
-                                  {phase.progress}% selesai
-                                </p>
-                              </div>
-                            )}
+                            {phase.state === "active" &&
+                              phase.progress && (
+                                <div className="mt-2">
+                                  <MiniBar
+                                    value={phase.progress}
+                                  />
+
+                                  <p className="mt-1 text-xs font-semibold text-[#025CB8]">
+                                    {phase.progress}% selesai
+                                  </p>
+                                </div>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </>
                 )}
               </div>
@@ -1026,95 +1039,95 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-                {highlightedSkills.map((skillCard) => {
-                  const isHover =
-                    activeCard === skillCard.id;
+                  {highlightedSkills.map((skillCard) => {
+                    const isHover =
+                      activeCard === skillCard.id;
 
-                  return (
-                    <div
-                      key={skillCard.id}
-                      onMouseEnter={() =>
-                        setActiveCard(skillCard.id)
-                      }
-                      onMouseLeave={() =>
-                        setActiveCard(null)
-                      }
-                      className={`cursor-pointer rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 flex flex-col ${isHover
+                    return (
+                      <div
+                        key={skillCard.id}
+                        onMouseEnter={() =>
+                          setActiveCard(skillCard.id)
+                        }
+                        onMouseLeave={() =>
+                          setActiveCard(null)
+                        }
+                        className={`cursor-pointer rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 flex flex-col ${isHover
                           ? "border-opacity-0 shadow-xl -translate-y-1"
                           : "hover:shadow-md"
-                        }`}
-                      style={
-                        isHover
-                          ? {
-                            borderColor:
-                              skillCard.accent + "30",
-                          }
-                          : {}
-                      }
-                    >
-                      <div className="mb-4 flex items-center gap-3">
-                        <div
-                          className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300"
-                          style={{
-                            background: isHover
-                              ? skillCard.accent
-                              : skillCard.soft,
-
-                            color: isHover
-                              ? "#fff"
-                              : skillCard.accent,
-                          }}
-                        >
-                          {skillCard.icon}
-                        </div>
-
-                        <div>
-                          <p className="font-bold text-gray-800">
-                            {skillCard.label}
-                          </p>
-
-                          <p className="text-[10px] text-gray-400">
-                            High Priority
-                          </p>
-                        </div>
-                      </div>
-
-                      <p className="mb-4 text-xs leading-relaxed text-gray-500">
-                        {skillCard.demand}
-                      </p>
-
-                      <div className="mb-4">
-                        <div className="mb-1.5 flex justify-between text-[11px] text-gray-500">
-                          <span>Relevansi industri</span>
-
-                          <span
-                            className="font-bold"
+                          }`}
+                        style={
+                          isHover
+                            ? {
+                              borderColor:
+                                skillCard.accent + "30",
+                            }
+                            : {}
+                        }
+                      >
+                        <div className="mb-4 flex items-center gap-3">
+                          <div
+                            className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300"
                             style={{
-                              color: skillCard.accent,
+                              background: isHover
+                                ? skillCard.accent
+                                : skillCard.soft,
+
+                              color: isHover
+                                ? "#fff"
+                                : skillCard.accent,
                             }}
                           >
-                            {skillCard.percentage}%
-                          </span>
+                            {skillCard.icon}
+                          </div>
+
+                          <div>
+                            <p className="font-bold text-gray-800">
+                              {skillCard.label}
+                            </p>
+
+                            <p className="text-[10px] text-gray-400">
+                              High Priority
+                            </p>
+                          </div>
                         </div>
 
-                        <MiniBar
-                          value={skillCard.percentage}
-                          accent={skillCard.accent}
-                        />
-                      </div>
+                        <p className="mb-4 text-xs leading-relaxed text-gray-500">
+                          {skillCard.demand}
+                        </p>
 
-                      <button
-                        className="w-full rounded-xl py-2.5 text-xs font-bold text-white transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95"
-                        style={{
-                          background: skillCard.accent,
-                        }}
-                      >
-                        Mulai Belajar →
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+                        <div className="mb-4">
+                          <div className="mb-1.5 flex justify-between text-[11px] text-gray-500">
+                            <span>Relevansi industri</span>
+
+                            <span
+                              className="font-bold"
+                              style={{
+                                color: skillCard.accent,
+                              }}
+                            >
+                              {skillCard.percentage}%
+                            </span>
+                          </div>
+
+                          <MiniBar
+                            value={skillCard.percentage}
+                            accent={skillCard.accent}
+                          />
+                        </div>
+
+                        <button
+                          className="w-full rounded-xl py-2.5 text-xs font-bold text-white transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95"
+                          style={{
+                            background: skillCard.accent,
+                          }}
+                        >
+                          Mulai Belajar →
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </FadeSection>
@@ -1173,80 +1186,80 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {coursesToRender.map((courseItem) => (
-                  <div
-                    key={courseItem.id}
-                    className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                  >
+                  {coursesToRender.map((courseItem) => (
                     <div
-                      className="relative flex h-32 w-full items-center justify-center"
-                      style={{
-                        backgroundColor:
-                          `${courseItem.accent}15`,
-                      }}
+                      key={courseItem.id}
+                      className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                     >
                       <div
-                        className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm"
+                        className="relative flex h-32 w-full items-center justify-center"
                         style={{
-                          color: courseItem.accent,
+                          backgroundColor:
+                            `${courseItem.accent}15`,
                         }}
                       >
-                        <BookOpen size={28} />
-                      </div>
-
-                      {!!courseItem.tag && (
                         <div
-                          className={`absolute left-3 top-3 rounded-lg px-2 py-1 text-[10px] font-bold shadow-sm ${courseItem.tagStyle}`}
+                          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm"
+                          style={{
+                            color: courseItem.accent,
+                          }}
                         >
-                          {courseItem.tag}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-1 flex-col p-5">
-                      <span className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                        {courseItem.field}
-                      </span>
-
-                      <h3 className="mb-3 text-sm font-bold leading-tight text-gray-800 transition-colors group-hover:text-[#025CB8]">
-                        {courseItem.title}
-                      </h3>
-
-                      <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-3">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-semibold text-gray-600">
-                            {courseItem.source}
-                          </span>
-
-                          <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                            <Clock size={10} />
-
-                            {courseItem.duration}
-                          </span>
+                          <BookOpen size={28} />
                         </div>
 
-                        <div className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs font-bold text-amber-600">
-                          <Star
-                            size={12}
-                            className="fill-amber-500"
-                          />
-
-                          {courseItem.rating}
-                        </div>
+                        {!!courseItem.tag && (
+                          <div
+                            className={`absolute left-3 top-3 rounded-lg px-2 py-1 text-[10px] font-bold shadow-sm ${courseItem.tagStyle}`}
+                          >
+                            {courseItem.tag}
+                          </div>
+                        )}
                       </div>
 
-                      <button
-                        className="mt-4 w-full rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:shadow-md"
-                        style={{
-                          background: `linear-gradient(135deg, ${courseItem.accent}, ${courseItem.accent}CC)`,
-                        }}
-                      >
-                        Mulai Belajar
-                      </button>
+                      <div className="flex flex-1 flex-col p-5">
+                        <span className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                          {courseItem.field}
+                        </span>
+
+                        <h3 className="mb-3 text-sm font-bold leading-tight text-gray-800 transition-colors group-hover:text-[#025CB8]">
+                          {courseItem.title}
+                        </h3>
+
+                        <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-3">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-gray-600">
+                              {courseItem.source}
+                            </span>
+
+                            <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                              <Clock size={10} />
+
+                              {courseItem.duration}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs font-bold text-amber-600">
+                            <Star
+                              size={12}
+                              className="fill-amber-500"
+                            />
+
+                            {courseItem.rating}
+                          </div>
+                        </div>
+
+                        <button
+                          className="mt-4 w-full rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:shadow-md"
+                          style={{
+                            background: `linear-gradient(135deg, ${courseItem.accent}, ${courseItem.accent}CC)`,
+                          }}
+                        >
+                          Mulai Belajar
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
               )}
             </div>
           </FadeSection>
@@ -1330,9 +1343,9 @@ const Dashboard = () => {
                     {missingSkills.length > 0
                       ? (
                         <>Mulai belajar <span className="font-bold text-white">{missingSkills[0]}</span> dan tingkatkan peluangmu{" "}
-                        <span className="text-lg font-black text-white">
-                          {Math.min(Math.round((1 / Math.max(missingSkills.length + masteredSkills.length, 1)) * 100 + 5), 30)}%
-                        </span></>
+                          <span className="text-lg font-black text-white">
+                            {Math.min(Math.round((1 / Math.max(missingSkills.length + masteredSkills.length, 1)) * 100 + 5), 30)}%
+                          </span></>
                       )
                       : "Semua skill terpenuhi! Coba lamar pekerjaan sekarang."
                     }

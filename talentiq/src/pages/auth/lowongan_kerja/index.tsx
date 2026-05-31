@@ -15,107 +15,11 @@ import {
 
 import { useEffect, useMemo, useState } from "react";
 import { getProfileService, UserWithProfile } from "@/services/profile.service";
+import { getJobs, JobVacancy as ApiJobVacancy } from "@/services/job.service";
 
 import Sidebar from "@/components/common/sidebar";
 
-// dummy data dulu
-const recommendedVacancies = [
-  {
-    id: 1,
-    role: "Junior Data Analyst",
-    companyName: "PT Tokopedia Tbk",
-    accentColor: "#42B549",
-    city: "Jakarta",
-    workMode: "Hybrid",
-    income: "Rp 8.000.000 – 12.000.000 / bulan",
-    compatibility: 92,
-    matchedStacks: ["Python", "SQL", "Excel"],
-  },
-  {
-    id: 2,
-    role: "Data Analyst",
-    companyName: "Gojek Indonesia",
-    accentColor: "#00AA13",
-    city: "Jakarta",
-    workMode: "WFO",
-    income: "Rp 10.000.000 – 15.000.000 / bulan",
-    compatibility: 85,
-    matchedStacks: ["SQL", "Data Analysis", "Python"],
-  },
-  {
-    id: 3,
-    role: "Data Operations Specialist",
-    companyName: "Traveloka",
-    accentColor: "#1BA0E2",
-    city: "Tangerang",
-    workMode: "Remote",
-    income: "Rp 7.500.000 – 11.000.000 / bulan",
-    compatibility: 88,
-    matchedStacks: ["Excel", "SQL", "Communication"],
-  },
-  {
-    id: 4,
-    role: "BI Analyst (Junior)",
-    companyName: "Shopee",
-    accentColor: "#EE4D2D",
-    city: "Jakarta",
-    workMode: "Hybrid",
-    income: "Rp 9.000.000 – 13.000.000 / bulan",
-    compatibility: 82,
-    matchedStacks: ["SQL", "Python"],
-  },
-];
-
-const futureTargets = [
-  {
-    id: 11,
-    role: "Senior Data Analyst",
-    companyName: "Bank Jago",
-    accentColor: "#FF5A00",
-    city: "Jakarta",
-    workMode: "Hybrid",
-    income: "Rp 15.000.000 – 25.000.000 / bulan",
-    compatibility: 65,
-    currentSkills: ["SQL", "Python"],
-    requiredSkills: ["Tableau", "Power BI", "A/B Testing"],
-  },
-  {
-    id: 12,
-    role: "Data Scientist",
-    companyName: "Ruangguru",
-    accentColor: "#3B82F6",
-    city: "Remote",
-    workMode: "Remote",
-    income: "Rp 12.000.000 – 20.000.000 / bulan",
-    compatibility: 58,
-    currentSkills: ["Python", "SQL"],
-    requiredSkills: ["Machine Learning", "Scikit-learn"],
-  },
-  {
-    id: 13,
-    role: "Machine Learning Engineer",
-    companyName: "Telkomsel",
-    accentColor: "#E3000F",
-    city: "Jakarta",
-    workMode: "WFO",
-    income: "Rp 14.000.000 – 22.000.000 / bulan",
-    compatibility: 45,
-    currentSkills: ["Python"],
-    requiredSkills: ["Deep Learning", "TensorFlow", "Cloud (AWS/GCP)"],
-  },
-  {
-    id: 14,
-    role: "BI Developer",
-    companyName: "Astra International",
-    accentColor: "#00529C",
-    city: "Jakarta",
-    workMode: "Hybrid",
-    income: "Rp 11.000.000 – 16.000.000 / bulan",
-    compatibility: 72,
-    currentSkills: ["SQL", "Excel"],
-    requiredSkills: ["Power BI", "Data Warehousing"],
-  },
-];
+// Removed dummy data
 
 const filterButtonStyle =
   "flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 transition";
@@ -150,7 +54,7 @@ const JobCard = ({
 
           <div>
             <h3
-              className={`font-bold text-base transition-colors
+              className={`font-bold text-base transition-colors text-gray-800
                 ${isFutureRole
                   ? "group-hover:text-orange-600"
                   : "group-hover:text-[#025CB8]"
@@ -205,10 +109,7 @@ const JobCard = ({
           </p>
 
           <div className="flex flex-wrap gap-2">
-            {(isFutureRole
-              ? vacancy.currentSkills
-              : vacancy.matchedStacks
-            ).map((skill: string) => (
+            {(vacancy.matchedStacks || []).map((skill: string) => (
               <span
                 key={skill}
                 className="px-2 py-1 rounded-md border border-green-100 bg-green-50 text-green-700 text-[10px] font-bold"
@@ -226,7 +127,7 @@ const JobCard = ({
             </p>
 
             <div className="flex flex-wrap gap-2">
-              {vacancy.requiredSkills.map((skill: string) => (
+              {vacancy.missingStacks?.map((skill: string) => (
                 <span
                   key={skill}
                   className="px-2 py-1 rounded-md border border-red-100 bg-red-50 text-red-600 text-[10px] font-bold"
@@ -271,23 +172,30 @@ const JobCard = ({
 const CariLowongan = () => {
   const [keyword, setKeyword] = useState("");
   const [sidebarMini, setSidebarMini] = useState(false);
-
   const [profileData, setProfileData] = useState<UserWithProfile | null>(null);
+  const [jobsData, setJobsData] = useState<ApiJobVacancy[]>([]);
+  const [filterLocation, setFilterLocation] = useState("");
+  const [filterWorkMode, setFilterWorkMode] = useState("");
+  const [sortOrder, setSortOrder] = useState("Paling Relevan");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await getProfileService();
-        setProfileData(response.user);
+        const profileResponse = await getProfileService();
+        const profile = profileResponse.user;
+        setProfileData(profile);
+        
+        const jobs = await getJobs(profile.profile?.targetRole || undefined);
+        setJobsData(jobs);
       } catch (err) {
-        console.error("Error fetching profile in job search:", err);
+        console.error("Error fetching data in job search:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchProfile();
+    fetchData();
   }, []);
 
   const userSkills = useMemo(() => {
@@ -298,148 +206,81 @@ const CariLowongan = () => {
     return profileData?.profile?.targetRole || "Programmer";
   }, [profileData]);
 
-  const resolvedVacancies = useMemo(() => {
-    const defaultVacancies = [
-      {
-        id: 1,
-        role: `Junior ${targetRole}`,
-        companyName: "PT Tokopedia Tbk",
-        accentColor: "#42B549",
-        city: "Jakarta",
-        workMode: "Hybrid",
-        income: "Rp 8.000.000 – 12.000.000 / bulan",
-        requiredSkills: ["Python", "SQL", "Excel"],
-      },
-      {
-        id: 2,
-        role: targetRole,
-        companyName: "Gojek Indonesia",
-        accentColor: "#00AA13",
-        city: "Jakarta",
-        workMode: "WFO",
-        income: "Rp 10.000.000 – 15.000.000 / bulan",
-        requiredSkills: ["SQL", "Tableau", "Python"],
-      },
-      {
-        id: 3,
-        role: `${targetRole} Specialist`,
-        companyName: "Traveloka",
-        accentColor: "#1BA0E2",
-        city: "Tangerang",
-        workMode: "Remote",
-        income: "Rp 7.500.000 – 11.000.000 / bulan",
-        requiredSkills: ["Excel", "SQL", "Communication"],
-      },
-      {
-        id: 4,
-        role: `BI ${targetRole} (Junior)`,
-        companyName: "Shopee",
-        accentColor: "#EE4D2D",
-        city: "Jakarta",
-        workMode: "Hybrid",
-        income: "Rp 9.000.000 – 13.000.000 / bulan",
-        requiredSkills: ["SQL", "Python", "Power BI"],
-      },
-    ];
+  const readyJobs = useMemo(() => {
+    return jobsData.filter(job => job.compatibility >= 60);
+  }, [jobsData]);
 
-    return defaultVacancies.map((vacancy) => {
-      const matched = vacancy.requiredSkills.filter((s) =>
-        userSkills.some((us) => us.toLowerCase() === s.toLowerCase())
-      );
-      const compatibility = vacancy.requiredSkills.length > 0
-        ? Math.round((matched.length / vacancy.requiredSkills.length) * 100)
-        : 0;
+  const futureJobs = useMemo(() => {
+    return jobsData.filter(job => job.compatibility < 60);
+  }, [jobsData]);
 
-      return {
-        ...vacancy,
-        compatibility,
-        matchedStacks: matched,
-      };
-    });
-  }, [userSkills, targetRole]);
+  const filteredReadyJobs = useMemo(() => {
+    let result = readyJobs;
 
-  const resolvedFutureTargets = useMemo(() => {
-    const defaultFutureTargets = [
-      {
-        id: 11,
-        role: `Senior ${targetRole}`,
-        companyName: "Bank Jago",
-        accentColor: "#FF5A00",
-        city: "Jakarta",
-        workMode: "Hybrid",
-        income: "Rp 15.000.000 – 25.000.000 / bulan",
-        requiredSkills: ["Tableau", "Power BI", "A/B Testing"],
-      },
-      {
-        id: 12,
-        role: `${targetRole} Scientist`,
-        companyName: "Ruangguru",
-        accentColor: "#3B82F6",
-        city: "Remote",
-        workMode: "Remote",
-        income: "Rp 12.000.000 – 20.000.000 / bulan",
-        requiredSkills: ["Python", "SQL", "Machine Learning", "Scikit-learn"],
-      },
-      {
-        id: 13,
-        role: `Lead ${targetRole} Engineer`,
-        companyName: "Telkomsel",
-        accentColor: "#E3000F",
-        city: "Jakarta",
-        workMode: "WFO",
-        income: "Rp 14.000.000 – 22.000.000 / bulan",
-        requiredSkills: ["Python", "Deep Learning", "TensorFlow"],
-      },
-      {
-        id: 14,
-        role: `${targetRole} Developer`,
-        companyName: "Astra International",
-        accentColor: "#00529C",
-        city: "Jakarta",
-        workMode: "Hybrid",
-        income: "Rp 11.000.000 – 16.000.000 / bulan",
-        requiredSkills: ["SQL", "Excel", "Power BI", "Data Warehousing"],
-      },
-    ];
+    if (keyword.trim()) {
+      const normalized = keyword.toLowerCase();
+      result = result.filter((vacancy) => {
+        const searchableContent = [
+          vacancy.role,
+          vacancy.companyName,
+          vacancy.city,
+          ...(vacancy.matchedStacks || []),
+          ...(vacancy.missingStacks || []),
+        ].join(" ").toLowerCase();
+        return searchableContent.includes(normalized);
+      });
+    }
 
-    return defaultFutureTargets.map((vacancy) => {
-      const matched = vacancy.requiredSkills.filter((s) =>
-        userSkills.some((us) => us.toLowerCase() === s.toLowerCase())
-      );
-      const missing = vacancy.requiredSkills.filter(
-        (s) => !userSkills.some((us) => us.toLowerCase() === s.toLowerCase())
-      );
-      const compatibility = vacancy.requiredSkills.length > 0
-        ? Math.round((matched.length / vacancy.requiredSkills.length) * 100)
-        : 0;
+    if (filterLocation) {
+      result = result.filter((job) => job.city.toLowerCase() === filterLocation.toLowerCase());
+    }
+    if (filterWorkMode) {
+      result = result.filter((job) => job.workMode.toLowerCase() === filterWorkMode.toLowerCase());
+    }
 
-      return {
-        ...vacancy,
-        compatibility,
-        currentSkills: matched,
-        requiredSkills: missing.length > 0 ? missing : vacancy.requiredSkills,
-      };
-    });
-  }, [userSkills, targetRole]);
+    if (sortOrder === "Terbaru") {
+      result = [...result].sort((a, b) => b.id - a.id);
+    } else if (sortOrder === "Gaji Tertinggi") {
+      // Mock logic: assume higher compatibility = higher potential salary for now
+      // A better way is to parse the `income` string, but string parsing is complex here
+      result = [...result].sort((a, b) => b.compatibility - a.compatibility);
+    }
 
-  const filteredRecommendations = useMemo(() => {
-    if (!keyword.trim()) return resolvedVacancies;
+    return result;
+  }, [keyword, filterLocation, filterWorkMode, sortOrder, readyJobs]);
 
-    const normalized = keyword.toLowerCase();
+  const filteredFutureJobs = useMemo(() => {
+    let result = futureJobs;
 
-    return resolvedVacancies.filter((vacancy) => {
-      const searchableContent = [
-        vacancy.role,
-        vacancy.companyName,
-        vacancy.city,
-        ...vacancy.matchedStacks,
-      ]
-        .join(" ")
-        .toLowerCase();
+    if (keyword.trim()) {
+      const normalized = keyword.toLowerCase();
+      result = result.filter((vacancy) => {
+        const searchableContent = [
+          vacancy.role,
+          vacancy.companyName,
+          vacancy.city,
+          ...(vacancy.matchedStacks || []),
+          ...(vacancy.missingStacks || []),
+        ].join(" ").toLowerCase();
+        return searchableContent.includes(normalized);
+      });
+    }
 
-      return searchableContent.includes(normalized);
-    });
-  }, [keyword, resolvedVacancies]);
+    if (filterLocation) {
+      result = result.filter((job) => job.city.toLowerCase() === filterLocation.toLowerCase());
+    }
+    if (filterWorkMode) {
+      result = result.filter((job) => job.workMode.toLowerCase() === filterWorkMode.toLowerCase());
+    }
+
+    if (sortOrder === "Terbaru") {
+      result = [...result].sort((a, b) => b.id - a.id);
+    } else if (sortOrder === "Gaji Tertinggi") {
+      result = [...result].sort((a, b) => b.compatibility - a.compatibility);
+    }
+
+    return result;
+  }, [keyword, filterLocation, filterWorkMode, sortOrder, futureJobs]);
 
   const layoutShift = sidebarMini ? "lg:ml-[90px]" : "lg:ml-[260px]";
 
@@ -491,7 +332,7 @@ const CariLowongan = () => {
                   value={keyword}
                   placeholder="Cari posisi, perusahaan, atau skill..."
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#025CB8] shadow-sm transition-all"
+                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-[#025CB8] shadow-sm transition-all bg-white"
                 />
               </div>
 
@@ -502,33 +343,49 @@ const CariLowongan = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <button className={filterButtonStyle}>
-                <MapPin size={14} />
-                Lokasi
-                <ChevronDown size={14} />
-              </button>
+              <div className="relative">
+                <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                <select
+                  value={filterLocation}
+                  onChange={(e) => setFilterLocation(e.target.value)}
+                  className="pl-8 pr-8 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer hover:bg-gray-50"
+                >
+                  <option value="">Semua Lokasi</option>
+                  <option value="Jakarta">Jakarta</option>
+                  <option value="Tangerang">Tangerang</option>
+                  <option value="Bandung">Bandung</option>
+                  <option value="Surabaya">Surabaya</option>
+                  <option value="Remote">Remote</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
 
-              <button className={filterButtonStyle}>
-                <Briefcase size={14} />
-                Tipe Kerja
-                <ChevronDown size={14} />
-              </button>
-
-              <button className={filterButtonStyle}>
-                <GraduationCap size={14} />
-                Level
-                <ChevronDown size={14} />
-              </button>
-
-              <button className={filterButtonStyle}>
-                <Filter size={14} />
-                Industri
-                <ChevronDown size={14} />
-              </button>
+              <div className="relative">
+                <Briefcase size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                <select
+                  value={filterWorkMode}
+                  onChange={(e) => setFilterWorkMode(e.target.value)}
+                  className="pl-8 pr-8 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer hover:bg-gray-50"
+                >
+                  <option value="">Semua Tipe Kerja</option>
+                  <option value="WFO">WFO</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Remote">Remote</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
 
               <div className="hidden sm:block w-px h-6 bg-gray-200 mx-2" />
 
-              <button className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition flex items-center gap-1">
+              <button 
+                onClick={() => {
+                  setFilterLocation("");
+                  setFilterWorkMode("");
+                  setKeyword("");
+                  setSortOrder("Paling Relevan");
+                }}
+                className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition flex items-center gap-1"
+              >
                 <X size={14} />
                 Reset Filter
               </button>
@@ -541,7 +398,7 @@ const CariLowongan = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
             <div>
               <p className="text-sm font-semibold text-gray-800">
-                Menampilkan 47 lowongan untuk:
+                Menampilkan {jobsData.length} lowongan untuk:{" "}
                 <span className="text-[#025CB8]">
                   {" "}
                   {targetRole}
@@ -561,12 +418,17 @@ const CariLowongan = () => {
               </p>
             </div>
 
-            <div className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-gray-600 shadow-sm">
+            <div className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-gray-600 shadow-sm flex items-center gap-2">
               Urutkan:
-              <span className="text-[#025CB8]">
-                {" "}
-                Paling Relevan
-              </span>
+              <select 
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="text-[#025CB8] font-bold bg-transparent border-none outline-none cursor-pointer appearance-none pr-4"
+              >
+                <option value="Paling Relevan">Paling Relevan</option>
+                <option value="Terbaru">Terbaru</option>
+                <option value="Gaji Tertinggi">Gaji Tertinggi</option>
+              </select>
             </div>
           </div>
 
@@ -597,25 +459,34 @@ const CariLowongan = () => {
             <>
               {/* cocok */}
               <section>
-                <div className="mb-6">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 font-bold text-sm rounded-lg mb-2">
-                    <Sparkles size={16} />
-                    Skill Kamu Sudah Mumpuni
+                {(filteredReadyJobs.length > 0 || (keyword || filterLocation || filterWorkMode)) && (
+                  <div className="mb-6">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 font-bold text-sm rounded-lg mb-2">
+                      <Sparkles size={16} />
+                      Skill Kamu Sudah Mumpuni
+                    </div>
+
+                    <p className="text-sm text-gray-500">
+                      Kamu memenuhi kualifikasi untuk posisi-posisi ini.
+                    </p>
                   </div>
+                )}
 
-                  <p className="text-sm text-gray-500">
-                    Kamu memenuhi kualifikasi untuk posisi-posisi ini.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {filteredRecommendations.map((vacancy) => (
-                    <JobCard
-                      key={vacancy.id}
-                      vacancy={vacancy}
-                    />
-                  ))}
-                </div>
+                {filteredReadyJobs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
+                    {filteredReadyJobs.map((vacancy) => (
+                      <JobCard key={vacancy.id} vacancy={vacancy} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 text-center bg-white border border-gray-100 py-10 rounded-2xl shadow-sm text-sm">
+                    {keyword || filterLocation || filterWorkMode ? (
+                      "Tidak ada lowongan mumpuni yang sesuai dengan kriteria filter/pencarian Anda."
+                    ) : (
+                      "Belum ada lowongan yang kecocokannya tinggi. Terus tingkatkan skill Anda!"
+                    )}
+                  </div>
+                )}
 
                 <div className="mt-6 text-center">
                   <button className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm">
@@ -637,26 +508,34 @@ const CariLowongan = () => {
 
               {/* target berikutnya */}
               <section className="pb-10">
-                <div className="mb-6">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 font-bold text-sm rounded-lg mb-2">
-                    <Target size={16} />
-                    Perlu Tingkatkan Skill Dulu
+                {(filteredFutureJobs.length > 0 || (keyword || filterLocation || filterWorkMode)) && (
+                  <div className="mb-6">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 font-bold text-sm rounded-lg mb-2">
+                      <Target size={16} />
+                      Perlu Tingkatkan Skill Dulu
+                    </div>
+
+                    <p className="text-sm text-gray-500">
+                      Ada beberapa skill yang masih perlu kamu pelajari.
+                    </p>
                   </div>
+                )}
 
-                  <p className="text-sm text-gray-500">
-                    Ada beberapa skill yang masih perlu kamu pelajari.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {resolvedFutureTargets.map((vacancy) => (
-                    <JobCard
-                      key={vacancy.id}
-                      vacancy={vacancy}
-                      aspirational
-                    />
-                  ))}
-                </div>
+                {filteredFutureJobs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {filteredFutureJobs.map((vacancy) => (
+                      <JobCard
+                        key={vacancy.id}
+                        vacancy={vacancy}
+                        aspirational
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 text-center bg-white border border-gray-100 py-10 rounded-2xl shadow-sm text-sm">
+                    Tidak ada lowongan aspirasi yang sesuai dengan kriteria filter/pencarian Anda.
+                  </div>
+                )}
 
                 <div className="mt-6 text-center">
                   <button className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm">

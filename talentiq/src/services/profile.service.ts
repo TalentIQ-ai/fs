@@ -60,3 +60,20 @@ export const updateStatsService = async (
 ): Promise<{ message: string; profile: UserProfile }> => {
   return axiosClient.patch("/profile/stats", data);
 };
+
+// POST /api/ai/analyze-cv — kirim PDF CV untuk diekstrak AI
+export const analyzeCvService = async (
+  file: File,
+  targetRole: string
+): Promise<{ message: string; data: { extractedTextPreview: string, profile: { skills: string[], targetRole: string, experienceLevel: string } } }> => {
+  const formData = new FormData();
+  formData.append("cvFile", file);
+  formData.append("targetRole", targetRole);
+
+  // Perlu custom config karena axiosClient defaultnya JSON
+  return axiosClient.post("/ai/analyze-cv", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};

@@ -10,6 +10,7 @@ import {
   PlayCircle,
   Star,
   X,
+  FileText,
 } from "lucide-react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -34,6 +35,36 @@ const courseAccents = ["#025CB8", "#7C3AED", "#059669", "#EF4444", "#F59E0B", "#
 const courseBgSofts = ["#EFF6FF", "#F5F3FF", "#ECFDF5", "#FEF2F2", "#FEF3C7", "#F5F3FF"];
 
 // progress kecil
+const TARGET_CATEGORIES = [
+  "Software Engineer",
+  "Video/Content Creator",
+  "Graphic Designer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Marketing & Growth",
+  "Data Analyst & BI",
+  "Operations & Admin",
+  "UI/UX Designer",
+  "Full-Stack Developer",
+  "IT Infrastructure & DevOps",
+  "Sales",
+  "Mobile Developer",
+  "Architect",
+  "AI & ML Engineer",
+  "Web Developer",
+  "HR & Talent",
+  "QA Engineer",
+  "Strategy & Consulting",
+  "Data Engineer",
+  "Product Designer",
+  "Interior Designer",
+  "Editor & Writer",
+  "Education & Teaching",
+  "Motion Designer",
+  "Art Director",
+  "Illustrator",
+  "Game Developer"
+];
 const ProgressLine = ({
   percentage,
   accent = "#025CB8",
@@ -636,6 +667,34 @@ const ProfilKursus = () => {
                     </div>
                   </div>
 
+                  {/* CV Status */}
+                  <div className="mb-8 rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
+                          <FileText size={18} className="text-[#025CB8]" />
+                          Status Analisis CV
+                        </h3>
+                        {skillCollection.length > 0 ? (
+                          <p className="mt-1 text-xs text-gray-500">
+                            CV kamu sudah dianalisis oleh AI. Skill dan role kamu telah disesuaikan dengan data terbaru.
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs text-red-500 font-medium">
+                            Kamu belum pernah mengunggah CV atau menganalisis skillmu.
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => window.location.href = "/auth/user-analisis-skill"}
+                        className="shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-bold text-[#025CB8] shadow-sm border border-blue-200 transition-colors hover:bg-blue-50"
+                      >
+                        {skillCollection.length > 0 ? "Perbarui CV" : "Upload CV"}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* form */}
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -674,15 +733,20 @@ const ProfilKursus = () => {
                           Posisi yang Diincar
                         </label>
 
-                        <input
-                          type="text"
+                        <select
                           value={careerTarget}
                           onChange={(e) =>
                             setCareerTarget(e.target.value)
                           }
-                          placeholder="Contoh: Data Analyst"
-                          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-[#025CB8] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
-                        />
+                          className="w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-700 transition-all focus:border-[#025CB8] focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        >
+                          <option value="">Pilih Posisi yang Diincar...</option>
+                          {TARGET_CATEGORIES.map((role) => (
+                            <option key={role} value={role}>
+                              {role}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>

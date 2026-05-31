@@ -32,7 +32,8 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import Sidebar from "@/components/common/sidebar";
-import { updateProfileService } from "@/services/profile.service";
+import { updateProfileService, analyzeCvService } from "@/services/profile.service";
+import axiosClient from "@/apis/axios-client";
 
 // tipe basic
 type CareerLevel = "" | "fresh" | "junior" | "mid" | "senior";
@@ -104,26 +105,57 @@ const skillChoices = [
   "Leadership",
 ];
 
+const TARGET_CATEGORIES = [
+  "Software Engineer",
+  "Video/Content Creator",
+  "Graphic Designer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Marketing & Growth",
+  "Data Analyst & BI",
+  "Operations & Admin",
+  "UI/UX Designer",
+  "Full-Stack Developer",
+  "IT Infrastructure & DevOps",
+  "Sales",
+  "Mobile Developer",
+  "Architect",
+  "AI & ML Engineer",
+  "Web Developer",
+  "HR & Talent",
+  "QA Engineer",
+  "Strategy & Consulting",
+  "Data Engineer",
+  "Product Designer",
+  "Interior Designer",
+  "Editor & Writer",
+  "Education & Teaching",
+  "Motion Designer",
+  "Art Director",
+  "Illustrator",
+  "Game Developer"
+];
+
 const loadingFlow = [
   {
     label: "Mengunggah CV...",
     icon: <Upload size={16} />,
-    duration: 1200,
+    duration: 500,
   },
   {
     label: "Membaca isi CV...",
     icon: <FileText size={16} />,
-    duration: 1600,
+    duration: 500,
   },
   {
     label: "Mendeteksi skill & pengalaman...",
     icon: <Sparkles size={16} />,
-    duration: 1700,
+    duration: 600,
   },
   {
     label: "Validasi data CV...",
     icon: <FileSearch size={16} />,
-    duration: 1500,
+    duration: 600,
   },
 ];
 
@@ -350,9 +382,7 @@ const CvLoadingOverlay = ({
     const finalTimer = setTimeout(() => {
       clearInterval(progressTimer);
 
-      setLoadingPercent(100);
-
-      onFinish();
+      setLoadingPercent(99); // Berhenti di 99% sampai state diganti oleh startAnalysis
     }, totalDuration);
 
     return () => {
@@ -570,15 +600,30 @@ const AnalisisSkill = () => {
     [verifyFile]
   );
 
-  const startAnalysis = () => {
-    if (!cvFile) return;
+  const startAnalysis = async () => {
+    if (!cvFile || !careerTarget) return;
 
     setAnalysisState("processing");
+    setUploadError(null);
+
+    try {
+      await Promise.all([
+        analyzeCvService(cvFile, careerTarget).then((response) => {
+          const { profile } = response.data;
+          setCareerLevel((profile.experienceLevel as CareerLevel) || "fresh");
+          setSelectedSkillTags(profile.skills || []);
+        }),
+        new Promise((resolve) => setTimeout(resolve, 2000)) // 2 detik minimal untuk animasi
+      ]);
+      
+      setAnalysisState("success");
+    } catch (error: any) {
+      console.error("Analysis error:", error);
+      setAnalysisState("cv_not_found");
+    }
   };
 
-  const finishAnalysis = () => {
-    setAnalysisState("cv_not_found");
-  };
+  // finishAnalysis sudah tidak dipakai, dihapus.
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -619,9 +664,7 @@ const AnalisisSkill = () => {
   return (
     <>
       {analysisState === "processing" && (
-        <CvLoadingOverlay
-          onFinish={finishAnalysis}
-        />
+        <CvLoadingOverlay onFinish={() => {}} />
       )}
 
       <div className="min-h-screen bg-[#F7F9FC]">
@@ -671,8 +714,55 @@ const AnalisisSkill = () => {
           <div className="max-w-5xl mx-auto px-5 pt-7">
             <div className="grid lg:grid-cols-[1fr_320px] gap-6">
               {/* kiri */}
+              {analysisState === "success" ? (
+                <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden text-center p-10 h-fit">
+                  <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-6 bg-green-100">
+                    <CheckCircle2 size={40} className="text-green-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Analisis CV Berhasil!</h2>
+                  <p className="text-gray-500 mb-8">
+                    AI telah memproses profil kamu dan menyusun rekomendasi karir.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/dashboard")}
+                    className="px-8 py-4 rounded-2xl text-white font-bold text-base transition-all duration-300 hover:scale-[1.02]"
+                    style={{ background: "linear-gradient(135deg, #025CB8, #000000)" }}
+                  >
+                    Ke Dashboard Sekarang
+                  </button>
+                </div>
+              ) : (
               <div className="space-y-5">
+                {/* PILIH TARGET ROLE */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <User size={18} className="text-[#025CB8]" />
+                    <h2 className="font-bold text-gray-700">
+                      Pilih Target Karir
+                    </h2>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Pilih posisi pekerjaan yang ingin Anda tuju agar AI dapat mencocokkan CV Anda dengan akurat.
+                  </p>
+                  <div className="relative">
+                    <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <select
+                      value={careerTarget}
+                      onChange={(e) => setCareerTarget(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#025CB8] appearance-none bg-white font-medium text-gray-800"
+                    >
+                      <option value="">Pilih Posisi yang Diincar...</option>
+                      {TARGET_CATEGORIES.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className={`bg-white rounded-2xl border border-gray-100 p-6 shadow-sm transition-opacity duration-300 ${!careerTarget ? 'opacity-40 pointer-events-none' : ''}`}>
                   <div className="flex items-center gap-2 mb-5">
                     <Upload
                       size={18}
@@ -852,13 +942,8 @@ const AnalisisSkill = () => {
                           <input
                             type="text"
                             value={careerTarget}
-                            onChange={(e) =>
-                              setCareerTarget(
-                                e.target.value
-                              )
-                            }
-                            placeholder="Frontend Developer"
-                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#025CB8]"
+                            disabled
+                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 font-medium cursor-not-allowed"
                           />
                         </div>
                       </div>
@@ -983,6 +1068,7 @@ const AnalisisSkill = () => {
                   <ArrowRight size={18} />
                 </button>
               </div>
+              )}
 
               {/* kanan */}
               <div className="space-y-4">

@@ -229,8 +229,8 @@ const CareerLevelSelector = ({
         >
           <div
             className={`font-bold text-sm ${selected
-                ? "text-[#025CB8]"
-                : "text-gray-700"
+              ? "text-[#025CB8]"
+              : "text-gray-700"
               }`}
           >
             {careerItem.label}
@@ -333,7 +333,7 @@ const CvLoadingOverlay = ({
       typeof setTimeout
     >[] = [];
 
-    loadingFlow.forEach((flowItem, idx) => {
+    loadingFlow.forEach((_, idx) => {
       if (idx === 0) return;
 
       accumulatedDuration +=
@@ -410,10 +410,10 @@ const CvLoadingOverlay = ({
               >
                 <div
                   className={`${activeStep
-                      ? "text-[#025CB8]"
-                      : completedStep
-                        ? "text-green-500"
-                        : "text-gray-300"
+                    ? "text-[#025CB8]"
+                    : completedStep
+                      ? "text-green-500"
+                      : "text-gray-300"
                     }`}
                 >
                   {completedStep ? (
@@ -600,8 +600,8 @@ const AnalisisSkill = () => {
 
         <div
           className={`pb-24 transition-all duration-300 ${sidebarMini
-              ? "lg:ml-[90px]"
-              : "lg:ml-[260px]"
+            ? "lg:ml-[90px]"
+            : "lg:ml-[260px]"
             }`}
         >
           {/* topbar */}

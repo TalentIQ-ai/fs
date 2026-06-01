@@ -1,9 +1,9 @@
 // talentiq/src/pages/auth/forgot_password/index.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { GridScan } from "@/components/GridScan";
 import StarBorder from "@/components/StarBorder";
 import { forgotPasswordService } from "@/services/auth.service";
+import bg from "@/assets/bg.jpg";
 
 type Step = "input" | "sent";
 
@@ -38,23 +38,17 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-5 relative overflow-hidden bg-[#000000]">
+    <div
+      className="min-h-screen flex justify-center items-center p-5 relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${bg})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       {/* Overlay */}
       <div className="absolute inset-0 bg-[#000814]/80 z-0" />
-
-      {/* GridScan */}
-      <div className="absolute inset-0 z-[1] opacity-90">
-        <GridScan
-          gridScale={0.08}
-          lineThickness={1}
-          scanColor="#3B82F6"
-          linesColor="#2563EB"
-          scanOpacity={0.4}
-          scanDuration={3}
-          scanDelay={1}
-          bloomIntensity={0.4}
-        />
-      </div>
 
       {/* Back Button */}
       <Link

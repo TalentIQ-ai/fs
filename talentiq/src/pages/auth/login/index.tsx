@@ -1,9 +1,9 @@
 // talentiq/src/pages/auth/login/index.tsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { GridScan } from "@/components/GridScan";
 import StarBorder from "@/components/StarBorder";
 import { loginUser, saveToken } from "@/services/auth.service";
+import bg from "@/assets/bg.jpg";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -47,23 +47,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-5 relative overflow-hidden bg-[#020617]">
+    <div
+      className="min-h-screen flex justify-center items-center p-5 relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${bg})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       {/* Overlay */}
       <div className="absolute inset-0 bg-[#000814]/80 z-0" />
-
-      {/* GridScan */}
-      <div className="absolute inset-0 z-[1] opacity-90">
-        <GridScan
-          gridScale={0.08}
-          lineThickness={1}
-          scanColor="#025cb8"
-          linesColor="#025cb8"
-          scanOpacity={0.5}
-          scanDuration={3}
-          scanDelay={1}
-          bloomIntensity={0.5}
-        />
-      </div>
 
       {/* Back Button */}
       <Link

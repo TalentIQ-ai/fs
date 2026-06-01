@@ -32,7 +32,7 @@ const MotionBlock = ({
   return (
     <div
       ref={ref}
-      className={`${animClass(isVisible, direction, 0)} ${className}`}
+      className={`${animClass(isVisible, direction)} ${className}`}
     >
       {children}
     </div>

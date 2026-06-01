@@ -20,7 +20,7 @@ import {
 } from "@/hooks/use-scroll-animation";
 
 // daftar role karir
-const careerTracks = [
+const careerTracks: CareerTrack[] = [
   {
     badge: "Gaji Tinggi",
     logo:
@@ -149,15 +149,24 @@ const roadmapStages = [
   },
 ];
 
+type CareerTrack = {
+  badge: string;
+  logo: string;
+  roleName: string;
+  summary: string;
+  skillStack: string[];
+  duration: string;
+  careerStage: string;
+};
+
 type CareerBoxProps = {
-  careerInfo: (typeof careerTracks)[0];
+  careerInfo: CareerTrack;
   animDelay: number;
   onOpenRoadmap: () => void;
 };
 
 const CareerBox = ({
   careerInfo,
-  animDelay,
   onOpenRoadmap,
 }: CareerBoxProps) => {
   const { ref, isVisible } = useScrollAnimation();
@@ -168,7 +177,7 @@ const CareerBox = ({
       className={`bg-white rounded-2xl border border-gray-100 overflow-hidden
                   flex flex-col shadow-sm hover:shadow-xl
                   transition-all duration-300 hover:-translate-y-1
-                  ${animClass(isVisible, "up", animDelay)}`}
+                  ${animClass(isVisible, "up")}`}
     >
       <div className="h-1.5 bg-gradient-to-r from-[#025CB8] to-[#62AAEA]" />
 
@@ -280,8 +289,8 @@ const CareerBox = ({
 
                   <div
                     className={`flex-1 text-xs ${isLocked
-                        ? "text-gray-300"
-                        : "text-gray-600"
+                      ? "text-gray-300"
+                      : "text-gray-600"
                       }`}
                   >
                     <span className="font-semibold">
@@ -551,7 +560,7 @@ const JalurKarir = () => {
           className={`w-full max-w-[1210px]
           rounded-2xl border border-[#025CB8]
           flex flex-col items-center py-16 sm:py-24 px-6
-          ${animClass(heroShown, "up", 0)}`}
+          ${animClass(heroShown, "up")}`}
           style={{
             background:
               "linear-gradient(180deg, #00458D, #00458D00)",
@@ -611,7 +620,7 @@ const JalurKarir = () => {
         <div
           ref={statBannerRef}
           className={`w-full max-w-[1210px]
-          ${animClass(statBannerShown, "up", 100)}`}
+          ${animClass(statBannerShown, "up")}`}
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {statCards.map((stat) => (
@@ -666,7 +675,7 @@ const JalurKarir = () => {
         <div
           ref={ctaSectionRef}
           className={`w-full max-w-[1210px]
-          ${animClass(ctaShown, "up", 0)}`}
+          ${animClass(ctaShown, "up")}`}
         >
           <div
             className="bg-[#025CB8] rounded-2xl border border-[#D9D9D9]
@@ -677,16 +686,6 @@ const JalurKarir = () => {
             }}
           >
             <div className="flex-1 flex flex-col items-start">
-
-              <span
-                className="inline-flex items-center gap-2
-                           bg-white/10 text-white/80
-                           text-xs font-bold
-                           px-3 py-1 rounded-full mb-4"
-              >
-                <BrainCircuit size={13} />
-                Fitur Eksklusif Member
-              </span>
 
               <h2
                 className="text-white text-2xl sm:text-[36px]
@@ -812,8 +811,8 @@ const JalurKarir = () => {
                     <div
                       key={roadmapItem.no}
                       className={`flex items-center gap-3 ${roadmapItem.locked
-                          ? "opacity-40"
-                          : ""
+                        ? "opacity-40"
+                        : ""
                         }`}
                     >
                       <div

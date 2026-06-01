@@ -239,7 +239,7 @@ const ProfilKursus = () => {
 
       window.setTimeout(() => {
         setShowSavedAlert(false);
-      }, 3000);
+      }, 5000);
     } catch (saveErr: any) {
       setErrorMessage(
         saveErr?.response?.data?.message ||
@@ -596,10 +596,18 @@ const ProfilKursus = () => {
                   </h2>
 
                   {showSavedAlert && (
-                    <div className="mb-5 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-                      <CheckCircle2 size={16} />
-
-                      Profil berhasil disimpan!
+                    <div className="mb-5 flex items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700 animate-pulse-once">
+                      <span className="flex items-center gap-2">
+                        <CheckCircle2 size={16} />
+                        Profil berhasil disimpan!
+                      </span>
+                      <button
+                        onClick={() => setShowSavedAlert(false)}
+                        className="ml-2 text-green-500 hover:text-green-700 transition-colors shrink-0"
+                        title="Tutup"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   )}
 

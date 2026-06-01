@@ -495,6 +495,8 @@ const AnalisisSkill = () => {
   const [analysisState, setAnalysisState] =
     useState<CvProcessState>("idle");
 
+  const [showManualForm, setShowManualForm] = useState(false);
+
   const [careerTarget, setCareerTarget] =
     useState("");
 
@@ -774,6 +776,7 @@ const AnalisisSkill = () => {
                   </div>
 
                   {!cvFile ? (
+                    <>
                     <div
                       onDragOver={handleDragEnter}
                       onDragLeave={handleDragExit}
@@ -816,6 +819,23 @@ const AnalisisSkill = () => {
                         onChange={handleChooseFile}
                       />
                     </div>
+
+                    {/* Divider + Tombol Isi Manual */}
+                    <div className="flex items-center gap-3 mt-4">
+                      <div className="flex-1 h-px bg-gray-200" />
+                      <span className="text-xs text-gray-400 font-semibold">atau</span>
+                      <div className="flex-1 h-px bg-gray-200" />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowManualForm(true)}
+                      className="w-full mt-3 py-3 rounded-2xl border-2 border-dashed border-[#025CB8] text-[#025CB8] font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-50 transition-all duration-200"
+                    >
+                      <Sparkles size={16} />
+                      Tidak punya CV? Isi Manual
+                    </button>
+                    </>
                   ) : (
                     <div className="rounded-2xl border border-green-200 bg-green-50 p-4 flex items-center gap-4">
                       <div
@@ -867,8 +887,7 @@ const AnalisisSkill = () => {
                   )}
                 </div>
 
-                {analysisState ===
-                  "cv_not_found" && (
+                {analysisState === "cv_not_found" && (
                     <div className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
@@ -913,18 +932,28 @@ const AnalisisSkill = () => {
                     </div>
                   )}
 
-                {analysisState ===
-                  "cv_not_found" && (
+                {(analysisState === "cv_not_found" || showManualForm) && (
                     <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
-                      <div className="flex items-center gap-2">
-                        <Sparkles
-                          size={18}
-                          className="text-[#025CB8]"
-                        />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Sparkles
+                            size={18}
+                            className="text-[#025CB8]"
+                          />
 
-                        <h2 className="font-bold text-gray-700">
-                          Lengkapi Profil Secara Manual (CV Gagal Terbaca)
-                        </h2>
+                          <h2 className="font-bold text-gray-700">
+                            Lengkapi Profil Secara Manual
+                          </h2>
+                        </div>
+                        {showManualForm && analysisState !== "cv_not_found" && (
+                          <button
+                            type="button"
+                            onClick={() => setShowManualForm(false)}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
                       </div>
 
                       <p className="text-sm text-gray-500 leading-relaxed">

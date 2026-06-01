@@ -206,6 +206,9 @@ const CariLowongan = () => {
   const [filterWorkMode, setFilterWorkMode] = useState("");
   const [sortOrder, setSortOrder] = useState("Paling Relevan");
   const [loading, setLoading] = useState(true);
+  const PAGE_SIZE = 6;
+  const [pageReady, setPageReady] = useState(1);
+  const [pageFuture, setPageFuture] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -245,6 +248,8 @@ const CariLowongan = () => {
   const filteredReadyJobs = useMemo(() => {
     let result = readyJobs;
 
+    setPageReady(1);
+
     if (keyword.trim()) {
       const normalized = keyword.toLowerCase();
       result = result.filter((vacancy) => {
@@ -277,8 +282,15 @@ const CariLowongan = () => {
     return result;
   }, [keyword, filterLocation, filterWorkMode, sortOrder, readyJobs]);
 
+  const visibleReadyJobs = useMemo(
+    () => filteredReadyJobs.slice(0, pageReady * PAGE_SIZE),
+    [filteredReadyJobs, pageReady]
+  );
+
   const filteredFutureJobs = useMemo(() => {
     let result = futureJobs;
+
+    setPageFuture(1);
 
     if (keyword.trim()) {
       const normalized = keyword.toLowerCase();
@@ -309,6 +321,11 @@ const CariLowongan = () => {
 
     return result;
   }, [keyword, filterLocation, filterWorkMode, sortOrder, futureJobs]);
+
+  const visibleFutureJobs = useMemo(
+    () => filteredFutureJobs.slice(0, pageFuture * PAGE_SIZE),
+    [filteredFutureJobs, pageFuture]
+  );
 
   const layoutShift = sidebarMini ? "lg:ml-[90px]" : "lg:ml-[260px]";
 
@@ -502,7 +519,7 @@ const CariLowongan = () => {
 
                 {filteredReadyJobs.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
-                    {filteredReadyJobs.map((vacancy) => (
+                    {visibleReadyJobs.map((vacancy) => (
                       <JobCard key={vacancy.id} vacancy={vacancy} />
                     ))}
                   </div>
@@ -516,11 +533,16 @@ const CariLowongan = () => {
                   </div>
                 )}
 
-                <div className="mt-6 text-center">
-                  <button className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm">
-                    Muat Lebih Banyak Lowongan
-                  </button>
-                </div>
+                {visibleReadyJobs.length < filteredReadyJobs.length && (
+                  <div className="mt-6 text-center">
+                    <button
+                      onClick={() => setPageReady(p => p + 1)}
+                      className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm"
+                    >
+                      Muat Lebih Banyak Lowongan ({filteredReadyJobs.length - visibleReadyJobs.length} tersisa)
+                    </button>
+                  </div>
+                )}
               </section>
 
               {/* garis pembatas */}
@@ -551,7 +573,7 @@ const CariLowongan = () => {
 
                 {filteredFutureJobs.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {filteredFutureJobs.map((vacancy) => (
+                    {visibleFutureJobs.map((vacancy) => (
                       <JobCard
                         key={vacancy.id}
                         vacancy={vacancy}
@@ -565,11 +587,16 @@ const CariLowongan = () => {
                   </div>
                 )}
 
-                <div className="mt-6 text-center">
-                  <button className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm">
-                    Muat Lebih Banyak Aspirasi
-                  </button>
-                </div>
+                {visibleFutureJobs.length < filteredFutureJobs.length && (
+                  <div className="mt-6 text-center">
+                    <button
+                      onClick={() => setPageFuture(p => p + 1)}
+                      className="px-5 py-2 bg-white border border-gray-200 text-sm font-bold text-gray-600 rounded-xl hover:bg-gray-50 transition shadow-sm"
+                    >
+                      Muat Lebih Banyak Aspirasi ({filteredFutureJobs.length - visibleFutureJobs.length} tersisa)
+                    </button>
+                  </div>
+                )}
               </section>
             </>
           )}

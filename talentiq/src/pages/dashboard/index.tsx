@@ -325,12 +325,7 @@ const FadeSection = ({
   return (
     <div
       ref={ref}
-      className={`${animClass(
-        isVisible,
-        direction,
-        700,
-        direction
-      )} ${extraClass}`}
+      className={`${animClass(isVisible, direction)} ${extraClass}`}
     >
       {children}
     </div>

@@ -29,6 +29,10 @@ import {
   RecommendedCourse,
 } from "@/services/dashboard.service";
 
+// Palet warna kursus berdasarkan index
+const courseAccents = ["#025CB8", "#7C3AED", "#059669", "#EF4444", "#F59E0B", "#8B5CF6"];
+const courseBgSofts = ["#EFF6FF", "#F5F3FF", "#ECFDF5", "#FEF2F2", "#FEF3C7", "#F5F3FF"];
+
 // progress kecil
 const TARGET_CATEGORIES = [
   "Software Engineer",

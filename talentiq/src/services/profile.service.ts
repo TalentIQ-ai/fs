@@ -76,4 +76,4 @@ export const analyzeCvService = async (
       "Content-Type": "multipart/form-data",
     },
   });
-};
+};

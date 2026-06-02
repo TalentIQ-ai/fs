@@ -25,155 +25,9 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/common/sidebar";
 import { animClass, useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { getDashboardSummary, DashboardSummary } from "@/services/dashboard.service";
+import { enrollCourseService, getRecommendationsService, getMyCoursesService } from "@/services/course.service";
 
-// mock sementara
-const dashboardSnapshot = {
-  profile: {
-    firstName: "Budi",
-    completeName: "Budi Santoso",
-  },
 
-  updatedAt: "20 Mei 2025",
-  jobReadyScore: 72,
-  dreamRole: "Data Analyst",
-
-  masteredSkills: ["Python", "SQL", "Excel", "Statistics", "Pandas"],
-
-  missingSkills: [
-    "Tableau",
-    "Power BI",
-    "ML Basics",
-    "Spark",
-    "Airflow",
-  ],
-
-  learningJourney: [
-    {
-      id: 1,
-      title: "Dasar Python",
-      state: "done",
-      estimate: "4 minggu",
-    },
-    {
-      id: 2,
-      title: "SQL Lanjutan",
-      state: "active",
-      estimate: "3 minggu",
-      progress: 60,
-    },
-    {
-      id: 3,
-      title: "Visualisasi Data\n(Tableau)",
-      state: "next",
-      estimate: "4 minggu",
-    },
-    {
-      id: 4,
-      title: "Machine Learning\nDasar",
-      state: "later",
-      estimate: "6 minggu",
-    },
-  ],
-
-  highlightedSkills: [
-    {
-      id: 1,
-      label: "Tableau",
-      icon: <TrendingUp size={22} />,
-      demand: "Dipakai di 87% lowongan Data Analyst",
-      percentage: 87,
-      accent: "#025CB8",
-      soft: "#EFF6FF",
-    },
-    {
-      id: 2,
-      label: "Power BI",
-      icon: <Database size={22} />,
-      demand: "Dipakai di 79% lowongan Data Analyst",
-      percentage: 79,
-      accent: "#7C3AED",
-      soft: "#F5F3FF",
-    },
-    {
-      id: 3,
-      label: "ML Basics",
-      icon: <Brain size={22} />,
-      demand: "Dipakai di 65% lowongan Data Analyst",
-      percentage: 65,
-      accent: "#059669",
-      soft: "#ECFDF5",
-    },
-  ],
-};
-
-const suggestedCourses = [
-  {
-    id: 1,
-    title: "Belajar Tableau dari Nol",
-    field: "Visualisasi Data",
-    source: "Udemy",
-    duration: "4.5 jam",
-    rating: 4.8,
-    tag: "Rekomendasi AI",
-    tagStyle: "bg-indigo-100 text-indigo-700",
-    accent: "#4F46E5",
-  },
-  {
-    id: 2,
-    title: "Machine Learning Dasar",
-    field: "Machine Learning",
-    source: "Coursera",
-    duration: "12 jam",
-    rating: 4.9,
-    tag: "Populer",
-    tagStyle: "bg-green-100 text-green-700",
-    accent: "#10B981",
-  },
-  {
-    id: 3,
-    title: "Python untuk Data Science",
-    field: "Pemrograman",
-    source: "Dicoding",
-    duration: "15 jam",
-    rating: 4.7,
-    tag: "",
-    tagStyle: "",
-    accent: "#F59E0B",
-  },
-  {
-    id: 4,
-    title: "Advanced SQL & Database",
-    field: "Database",
-    source: "Udacity",
-    duration: "8 jam",
-    rating: 4.6,
-    tag: "",
-    tagStyle: "",
-    accent: "#EF4444",
-  },
-  {
-    id: 5,
-    title: "Statistics for Data Science",
-    field: "Matematika",
-    source: "edX",
-    duration: "20 jam",
-    rating: 4.8,
-    tag: "Rekomendasi AI",
-    tagStyle: "bg-indigo-100 text-indigo-700",
-    accent: "#025CB8",
-  },
-  {
-    id: 6,
-    title: "Storytelling with Data",
-    field: "Komunikasi",
-    source: "Skillshare",
-    duration: "3 jam",
-    rating: 4.9,
-    tag: "Populer",
-    tagStyle: "bg-green-100 text-green-700",
-    accent: "#8B5CF6",
-  },
-];
 
 // progress circle
 const ScoreCircle = ({ score }: { score: number }) => {
@@ -339,25 +193,78 @@ const Dashboard = () => {
   const [sidebarShrink, setSidebarShrink] = useState(false);
 
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
+  const [llmRecs, setLlmRecs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingRecs, setLoadingRecs] = useState(true);
   const [error, setError] = useState("");
+  const [enrollingId, setEnrollingId] = useState<number | null>(null);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<number>>(new Set());
+
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+      const data = await getDashboardSummary();
+      setDashboardData(data);
+    } catch (err: any) {
+      console.error("[Dashboard] Error fetching:", err);
+      setError("Gagal memuat analisis karir AI Anda. Pastikan server aktif.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRecommendations = async () => {
+    try {
+      setLoadingRecs(true);
+      const [recsRes, myCoursesRes] = await Promise.all([
+        getRecommendationsService().catch(() => null),
+        getMyCoursesService().catch(() => null)
+      ]);
+
+      const enrolledIds = new Set<number>(
+        (myCoursesRes || []).map((c: any) => c.courseId || c.id)
+      );
+      setEnrolledCourseIds(enrolledIds);
+
+      if (recsRes) {
+        const filtered = (recsRes.recommendations || []).filter((r: any) => {
+          const cId = r.course?.id || r.courseId;
+          return !enrolledIds.has(cId);
+        });
+        setLlmRecs(filtered);
+      }
+    } catch (err) {
+      console.error("Error fetching recs:", err);
+    } finally {
+      setLoadingRecs(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        setLoading(true);
-        const data = await getDashboardSummary();
-        setDashboardData(data);
-      } catch (err: any) {
-        console.error("[Dashboard] Error fetching:", err);
-        setError("Gagal memuat analisis karir AI Anda. Pastikan server aktif.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboard();
+    fetchRecommendations();
   }, []);
+
+  const handleEnroll = async (courseId: number) => {
+    try {
+      setEnrollingId(courseId);
+      await enrollCourseService(courseId);
+      setEnrolledCourseIds((prev) => {
+        const next = new Set(prev);
+        next.add(courseId);
+        return next;
+      });
+      // Re-fetch dashboard stats so active courses counts, etc. are updated!
+      const data = await getDashboardSummary();
+      setDashboardData(data);
+      navigate("/profil");
+    } catch (err: any) {
+      console.error("Enroll error:", err);
+      alert(err?.response?.data?.message || "Gagal mendaftar ke kursus.");
+    } finally {
+      setEnrollingId(null);
+    }
+  };
 
   const sidebarWidth = useMemo(
     () => (sidebarShrink ? "lg:ml-[90px]" : "lg:ml-[260px]"),
@@ -439,29 +346,51 @@ const Dashboard = () => {
   }, [dashboardData, dreamRole]);
 
   const coursesToRender = useMemo(() => {
-    if (!dashboardData?.recommendedCourses || dashboardData.recommendedCourses.length === 0) {
-      // Jangan pakai dummy jika belum ada data — tampilkan empty state
+    if (dreamRole === "Belum ditentukan" || missingSkills.length === 0) {
       return [];
     }
-    return dashboardData.recommendedCourses.map((course) => {
-      let accent = "#025CB8";
-      if (course.category === "Visualisasi Data") accent = "#4F46E5";
-      else if (course.category === "Machine Learning") accent = "#10B981";
-      else if (course.category === "Database") accent = "#EF4444";
 
-      return {
-        id: course.id,
-        title: course.title,
-        field: course.category,
-        source: course.platform,
-        duration: course.duration,
-        rating: course.rating,
-        tag: course.badge || "",
-        tagStyle: course.badge === "Direkomendasikan AI" ? "bg-indigo-100 text-indigo-700" : "bg-green-100 text-green-700",
-        accent,
-      };
-    });
-  }, [dashboardData]);
+    let list: any[] = [];
+    if (llmRecs.length > 0) {
+      list = llmRecs.map((rec: any) => {
+        const matched = rec.matchedSkills || [];
+        const taught = rec.course?.skills_taught ? rec.course.skills_taught.split(",").map((s: string) => s.trim()) : [];
+        const uniqueSkills = Array.from(new Set([...matched, ...taught])).filter(Boolean);
+
+        return {
+          id: rec.course?.id || rec.courseId,
+          title: rec.course?.course_name || "Unknown Course",
+          category: rec.course?.category || "General",
+          platform: rec.course?.platform || "Online",
+          rating: 4.8,
+          badge: "Direkomendasikan AI",
+          url: rec.course?.url,
+          level: rec.course?.level || "Beginner",
+          skills: uniqueSkills,
+          reason: rec.reason || "",
+        };
+      });
+    } else if (dashboardData?.recommendedCourses) {
+      list = dashboardData.recommendedCourses.map((course) => {
+        return {
+          id: course.id,
+          title: course.title,
+          category: course.category,
+          platform: course.platform,
+          rating: course.rating,
+          badge: course.badge || "",
+          url: (course as any).url,
+          level: (course as any).level || "Beginner",
+          skills: (course as any).skills || [],
+          reason: (course as any).reason || "",
+        };
+      });
+    }
+
+    return list.filter((course) => !enrolledCourseIds.has(course.id));
+  }, [dashboardData, llmRecs, dreamRole, missingSkills, enrolledCourseIds]);
+
+  const shouldShowReason = (r: string) => r && r.trim().length > 5 && !r.toLowerCase().startsWith("course ini mencakup skill");
 
   if (loading) {
     return (
@@ -825,7 +754,7 @@ const Dashboard = () => {
                 </div>
 
                 <button
-                  onClick={() => navigate("/jalur-karir")}
+                  onClick={() => navigate("/auth/roadmap-karir")}
                   className="group flex items-center gap-1 text-xs font-semibold text-[#025CB8] transition hover:text-blue-700"
                 >
                   Lihat semua
@@ -1162,98 +1091,117 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              {coursesToRender.length === 0 ? (
+              {loadingRecs ? (
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-gray-100 bg-white py-12 shadow-sm min-h-[240px]">
+                  <Loader2 size={36} className="animate-spin text-[#025CB8] mb-3" />
+                  <p className="text-sm font-semibold text-gray-500 animate-pulse">Memuat rekomendasi kursus AI...</p>
+                </div>
+              ) : coursesToRender.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-10 flex flex-col items-center justify-center text-center">
                   <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
                     <BookOpen size={22} className="text-[#025CB8] opacity-50" />
                   </div>
-                  <p className="text-sm font-bold text-gray-400">Belum ada kursus rekomendasi</p>
+                  <p className="text-sm font-bold text-gray-400">Belum ada rekomendasi kursus</p>
                   <p className="text-xs text-gray-300 mt-1 max-w-xs">
-                    Tentukan target karir agar AI bisa merekomendasikan kursus yang tepat untukmu
+                    AI akan merekomendasikan kursus yang harus dipelajari setelah kamu upload CV
                   </p>
                   <button
-                    onClick={() => navigate("/profil")}
+                    onClick={() => navigate("/auth/user-analisis-skill")}
                     className="mt-4 px-5 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
                     style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
                   >
-                    Set Target Karir →
+                    Mulai Analisis CV →
                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                  {coursesToRender.map((courseItem) => (
-                    <div
-                      key={courseItem.id}
-                      className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                    >
+                  {coursesToRender.map((course) => {
+                    const badgeStyle = course.badge === "Direkomendasikan AI" || course.badge === "Rekomendasi AI"
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "bg-green-100 text-green-700";
+
+                    return (
                       <div
-                        className="relative flex h-32 w-full items-center justify-center"
-                        style={{
-                          backgroundColor:
-                            `${courseItem.accent}15`,
-                        }}
+                        key={course.id}
+                        className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[240px]"
                       >
-                        <div
-                          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm"
-                          style={{
-                            color: courseItem.accent,
-                          }}
-                        >
-                          <BookOpen size={28} />
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                {course.category}
+                              </span>
+                              <h3 className="font-bold text-sm text-gray-800 leading-snug line-clamp-2 mt-0.5" title={course.title}>
+                                {course.url ? (
+                                  <a href={course.url} target="_blank" rel="noreferrer" className="hover:text-[#025CB8] hover:underline transition-colors">
+                                    {course.title}
+                                  </a>
+                                ) : (
+                                  course.title
+                                )}
+                              </h3>
+                            </div>
+                            {course.badge && (
+                              <span className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-bold ${badgeStyle}`}>
+                                {course.badge}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Skills Tag Area */}
+                          {course.skills && course.skills.length > 0 && (
+                            <div className="mb-4 flex flex-wrap gap-1.5">
+                              {course.skills.slice(0, 3).map((skill: string) => (
+                                <span
+                                  key={skill}
+                                  className="bg-gray-100 text-gray-600 border border-gray-200/50 rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                              {course.skills.length > 3 && (
+                                <span title={course.skills.slice(3).join(", ")} className="bg-gray-50 text-gray-400 border border-gray-200/30 rounded-lg px-2 py-0.5 text-[9px] font-bold cursor-help">
+                                  +{course.skills.length - 3} lagi
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
-                        {!!courseItem.tag && (
-                          <div
-                            className={`absolute left-3 top-3 rounded-lg px-2 py-1 text-[10px] font-bold shadow-sm ${courseItem.tagStyle}`}
+                        <div>
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <div className="flex items-center">
+                              <span className="font-bold text-gray-600">{course.platform}</span>
+                              {course.level && (
+                                <span className="ml-2 bg-blue-50 text-[#025CB8] border border-blue-100 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider">
+                                  {course.level}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            disabled={enrollingId === course.id}
+                            onClick={() => handleEnroll(course.id)}
+                            style={{
+                              background:
+                                "linear-gradient(135deg, #025CB8, #62AAEA)",
+                            }}
+                            className="w-full mt-4 py-2.5 rounded-xl text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow"
                           >
-                            {courseItem.tag}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-1 flex-col p-5">
-                        <span className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                          {courseItem.field}
-                        </span>
-
-                        <h3 className="mb-3 text-sm font-bold leading-tight text-gray-800 transition-colors group-hover:text-[#025CB8]">
-                          {courseItem.title}
-                        </h3>
-
-                        <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-3">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-600">
-                              {courseItem.source}
-                            </span>
-
-                            <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                              <Clock size={10} />
-
-                              {courseItem.duration}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs font-bold text-amber-600">
-                            <Star
-                              size={12}
-                              className="fill-amber-500"
-                            />
-
-                            {courseItem.rating}
-                          </div>
+                            {enrollingId === course.id ? (
+                              <>
+                                <Loader2 size={12} className="animate-spin" />
+                                Mendaftar...
+                              </>
+                            ) : (
+                              "Mulai Belajar →"
+                            )}
+                          </button>
                         </div>
-
-                        <button
-                          className="mt-4 w-full rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:shadow-md"
-                          style={{
-                            background: `linear-gradient(135deg, ${courseItem.accent}, ${courseItem.accent}CC)`,
-                          }}
-                        >
-                          Mulai Belajar
-                        </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1310,7 +1258,7 @@ const Dashboard = () => {
               {/* belajar */}
               <div
                 onClick={() =>
-                  navigate("/auth/user-analisis-skill")
+                  navigate("/jalur-karir")
                 }
                 className="group relative cursor-pointer overflow-hidden rounded-2xl p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                 style={{
@@ -1347,7 +1295,7 @@ const Dashboard = () => {
                   </p>
 
                   <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-purple-700 shadow transition-all duration-200 hover:shadow-md group-hover:gap-3">
-                    Mulai Kursus
+                    Ke Roadmap Karir
 
                     <ArrowRight size={14} />
                   </button>

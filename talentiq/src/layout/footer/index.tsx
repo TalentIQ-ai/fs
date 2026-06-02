@@ -1,3 +1,4 @@
+//src/layout/footer/index.tsx
 import { Link } from "react-router-dom";
 import { FaInstagram, FaLinkedin } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
@@ -207,9 +208,9 @@ const FooterComponent = () => {
 
               {/* platform */}
               <div>
-                <h3 className="mb-6 text-lg font-bold">
+                <h2 className="mb-6 text-lg font-bold">
                   Platform
-                </h3>
+                </h2>
 
                 <div className="flex flex-col gap-4">
                   {mainMenus.map((menu) => (
@@ -230,9 +231,9 @@ const FooterComponent = () => {
 
               {/* perusahaan */}
               <div>
-                <h3 className="mb-6 text-lg font-bold">
+                <h2 className="mb-6 text-lg font-bold">
                   Perusahaan
-                </h3>
+                </h2>
 
                 <div className="flex flex-col gap-4">
                   {companyMenus.map((companyMenu) => (
@@ -253,9 +254,9 @@ const FooterComponent = () => {
 
               {/* kontak */}
               <div>
-                <h3 className="mb-6 text-lg font-bold">
+                <h2 className="mb-6 text-lg font-bold">
                   Hubungi Kami
-                </h3>
+                </h2>
 
                 <div className="flex flex-col gap-5">
 

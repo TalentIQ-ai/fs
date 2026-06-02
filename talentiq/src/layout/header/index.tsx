@@ -1,4 +1,3 @@
-//src/layout/header/index.tsx
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -25,7 +24,7 @@ const HeaderComponent = () => {
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          const shrink = window.scrollY > 30;
+          const shrink = window.scrollY > 40;
 
           setHeaderCompact((prev) =>
             prev !== shrink ? shrink : prev
@@ -38,17 +37,12 @@ const HeaderComponent = () => {
       }
     };
 
-    window.addEventListener(
-      "scroll",
-      handleScroll,
-      { passive: true }
-    );
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
 
     return () => {
-      window.removeEventListener(
-        "scroll",
-        handleScroll
-      );
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -62,14 +56,29 @@ const HeaderComponent = () => {
 
   return (
     <>
-      {/* top nav */}
-      <header className="fixed top-0 left-0 z-50 w-full flex justify-center px-4 sm:px-8 pt-4">
-
+      {/* HEADER */}
+      <header
+        className={`
+          fixed top-0 left-0 z-50 w-full
+          flex justify-center
+          px-4 sm:px-8
+          transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
+          will-change-transform
+          ${headerCompact ? "pt-2" : "pt-4"}
+        `}
+      >
         <div className="relative w-full max-w-7xl">
 
-          {/* glow dikit biar ga flat */}
+          {/* glow */}
           <div
-            className="absolute inset-0 rounded-[28px] blur-2xl opacity-70 pointer-events-none"
+            className={`
+              absolute inset-0 rounded-[30px]
+              opacity-60
+              blur-2xl
+              transition-all duration-500
+              pointer-events-none
+              ${headerCompact ? "scale-[0.98]" : "scale-100"}
+            `}
             style={{
               background:
                 "linear-gradient(90deg,#62AAEA,#025CB8,#62AAEA)",
@@ -85,17 +94,46 @@ const HeaderComponent = () => {
           >
             <div
               className={`
-                flex items-center rounded-[26px]
-                transition-all duration-300
-                bg-white/90 backdrop-blur-md px-6 py-4
-                ${headerCompact ? "shadow-xl" : "shadow-md"}
+                relative
+                flex items-center
+                rounded-[28px]
+
+                border border-white/40
+                backdrop-blur-xl
+
+                transition-all
+                duration-500
+                ease-[cubic-bezier(0.22,1,0.36,1)]
+
+                transform-gpu
+                will-change-transform
+
+                ${headerCompact
+                  ? `
+                      px-5 py-3
+                      bg-white/85
+                      shadow-2xl
+                      scale-[0.985]
+                    `
+                  : `
+                      px-6 py-4
+                      bg-white/92
+                      shadow-lg
+                      scale-100
+                    `
+                }
               `}
             >
 
-              {/* logo */}
+              {/* LOGO */}
               <Link
                 to="/"
-                className="mr-6 lg:mr-14 shrink-0 flex items-center"
+                className="
+                  mr-6 lg:mr-14
+                  shrink-0
+                  flex items-center
+                  transition-all duration-500
+                "
               >
                 <img
                   src={logoHeader}
@@ -104,11 +142,18 @@ const HeaderComponent = () => {
                   height={50}
                   fetchPriority="high"
                   decoding="async"
-                  className="h-8 w-auto object-contain"
+                  className={`
+                    object-contain
+                    transition-all duration-500
+                    ${headerCompact
+                      ? "h-7"
+                      : "h-8"
+                    }
+                  `}
                 />
               </Link>
 
-              {/* desktop nav */}
+              {/* DESKTOP NAV */}
               <nav className="hidden md:flex items-center gap-2 lg:gap-3">
                 {menuList.map((navLink) => {
                   const activePage =
@@ -119,15 +164,33 @@ const HeaderComponent = () => {
                       key={navLink.url}
                       to={navLink.url}
                       className={`
-                        relative rounded-xl px-4 py-2
-                        font-semibold transition-all duration-300
+                        relative
+                        rounded-xl
+                        font-semibold
+
+                        transition-all
+                        duration-300
+                        ease-out
 
                         ${activePage
-                          ? "bg-gradient-to-r from-[#025CB8] to-[#62AAEA] text-white shadow-lg"
-                          : "text-gray-600 hover:text-[#025CB8] hover:bg-[#025CB8]/5"
+                          ? `
+                              bg-gradient-to-r
+                              from-[#025CB8]
+                              to-[#62AAEA]
+                              text-white
+                              shadow-lg
+                            `
+                          : `
+                              text-gray-600
+                              hover:text-[#025CB8]
+                              hover:bg-[#025CB8]/5
+                            `
                         }
 
-                        ${headerCompact ? "text-sm" : "text-[15px]"}
+                        ${headerCompact
+                          ? "px-4 py-2 text-sm"
+                          : "px-4 py-2.5 text-[15px]"
+                        }
                       `}
                     >
                       {navLink.name}
@@ -138,7 +201,7 @@ const HeaderComponent = () => {
 
               <div className="flex-1" />
 
-              {/* kanan desktop */}
+              {/* RIGHT */}
               <div className="hidden md:flex items-center gap-3">
 
                 <button
@@ -148,19 +211,25 @@ const HeaderComponent = () => {
                     bg-gradient-to-r
                     from-[#025CB8]
                     to-[#62AAEA]
+
                     text-white
                     font-bold
+
                     shadow-lg
-                    transition-all duration-300
+
+                    transition-all
+                    duration-300
+
                     hover:-translate-y-0.5
                     hover:shadow-2xl
-                    hover:from-[#0147A0]
-                    hover:to-[#025CB8]
+                    hover:scale-[1.02]
+
+                    active:scale-[0.98]
                   "
                 >
                   <span
                     className={`
-                      block
+                      block transition-all duration-300
                       ${headerCompact
                         ? "px-4 py-2 text-sm"
                         : "px-5 py-2.5 text-sm"
@@ -172,19 +241,28 @@ const HeaderComponent = () => {
                 </button>
               </div>
 
-              {/* trigger mobile */}
+              {/* MOBILE BUTTON */}
               <button
                 aria-label="toggle navigation"
-                onClick={() => setMobileMenuShown((prev) => !prev)}
+                onClick={() =>
+                  setMobileMenuShown((prev) => !prev)
+                }
                 className="
                   md:hidden
                   w-11 h-11
                   rounded-xl
+
                   flex items-center justify-center
+
                   bg-[#025CB8]/10
                   text-[#025CB8]
+
                   transition-all duration-300
+
                   hover:bg-[#025CB8]/15
+                  hover:scale-105
+
+                  active:scale-95
                 "
               >
                 <svg
@@ -192,7 +270,11 @@ const HeaderComponent = () => {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  className="w-5 h-5"
+                  className={`
+                    transition-transform duration-300
+                    ${mobileMenuShown ? "rotate-90" : ""}
+                    w-5 h-5
+                  `}
                 >
                   {mobileMenuShown ? (
                     <path
@@ -214,21 +296,49 @@ const HeaderComponent = () => {
         </div>
       </header>
 
-      {/* menu hp */}
+      {/* MOBILE MENU */}
       <div
         className={`
-            fixed left-0 right-0 z-40 px-4 sm:px-8
-            transition-all duration-300 ease-in-out
-            ${headerCompact ? "top-[78px]" : "top-[86px]"}
+          fixed left-0 right-0 z-40
+          px-4 sm:px-8
 
-            ${mobileMenuShown
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-3 pointer-events-none"
+          transition-all
+          duration-500
+          ease-[cubic-bezier(0.22,1,0.36,1)]
+
+          ${headerCompact
+            ? "top-[78px]"
+            : "top-[92px]"
           }
-  `}
-      >
-        <div className="max-w-7xl mx-auto overflow-hidden rounded-2xl border border-gray-100 bg-white/95 backdrop-blur-md shadow-2xl">
 
+          ${mobileMenuShown
+            ? `
+                opacity-100
+                translate-y-0
+                pointer-events-auto
+              `
+            : `
+                opacity-0
+                -translate-y-4
+                pointer-events-none
+              `
+          }
+        `}
+      >
+        <div
+          className="
+            max-w-7xl mx-auto
+            overflow-hidden
+
+            rounded-3xl
+            border border-white/40
+
+            bg-white/92
+            backdrop-blur-xl
+
+            shadow-2xl
+          "
+        >
           <div className="flex flex-col gap-2 p-4">
 
             {menuList.map((navLink) => {
@@ -241,20 +351,33 @@ const HeaderComponent = () => {
                   to={navLink.url}
                   className={`
                     flex items-center justify-between
-                    rounded-xl px-4 py-3
-                    font-semibold transition-all duration-300
+                    rounded-xl
+                    px-4 py-3
+
+                    font-semibold
+
+                    transition-all duration-300
 
                     ${currentPage
-                      ? "bg-gradient-to-r from-[#025CB8] to-[#62AAEA] text-white"
-                      : "text-gray-700 hover:bg-[#025CB8]/5 hover:text-[#025CB8]"
+                      ? `
+                          bg-gradient-to-r
+                          from-[#025CB8]
+                          to-[#62AAEA]
+                          text-white
+                        `
+                      : `
+                          text-gray-700
+                          hover:bg-[#025CB8]/5
+                          hover:text-[#025CB8]
+                        `
                     }
                   `}
                 >
                   <span>{navLink.name}</span>
 
-                  {currentPage
-                    ? <div className="w-2 h-2 rounded-full bg-white" />
-                    : null}
+                  {currentPage && (
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  )}
                 </Link>
               );
             })}
@@ -266,14 +389,21 @@ const HeaderComponent = () => {
               className="
                 flex items-center justify-center
                 rounded-xl py-3
+
                 font-bold text-white
+
                 bg-gradient-to-r
                 from-[#025CB8]
                 to-[#62AAEA]
+
                 transition-all duration-300
+
                 shadow-md
-                hover:from-[#0147A0]
-                hover:to-[#025CB8]
+
+                hover:shadow-xl
+                hover:scale-[1.01]
+
+                active:scale-[0.98]
               "
             >
               Masuk ke Akun

@@ -1,7 +1,8 @@
-//src/pages/home.tsx
-import { useNavigate } from "react-router-dom";
+// src/pages/home.tsx
+
 import { Helmet } from "react-helmet-async";
-import { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
   ArrowRight,
   BrainCircuit,
@@ -15,96 +16,201 @@ import {
 } from "lucide-react";
 
 import HeaderComponent from "@/layout/header";
-import {
-  useScrollAnimation,
-  animClass,
-} from "@/hooks/use-scroll-animation";
-
-// wrapper anim biar ga nulis logic berulang
-interface MotionBlockProps {
-  children: ReactNode;
-  direction?: "up" | "down" | "left" | "right" | "fade";
-  className?: string;
-}
-
-const MotionBlock = ({
-  children,
-  direction = "up",
-  className = "",
-}: MotionBlockProps) => {
-  const { ref, isVisible } = useScrollAnimation();
-
-  return (
-    <div
-      ref={ref}
-      className={`${animClass(isVisible, direction)} ${className}`}
-    >
-      {children}
-    </div>
-  );
-};
+import MotionBlock from "@/components/common/motion-block";
 
 const featureMenus = [
-  { title: "Analisis Skill", description: "AI membaca CV dan menganalisis skill teknis maupun soft skill secara otomatis.", icon: <Sparkles size={22} />, redirectTo: "/analisis-skill", tag: "AI Analysis", },
-  { title: "Jalur Karir", description: "Dapatkan roadmap belajar dan pengembangan karir berdasarkan skill kamu.", icon: <Target size={22} />, redirectTo: "/jalur-karir", tag: "Career Roadmap", },
-  { title: "Lowongan Pekerjaan", description: "Temukan lowongan yang cocok dengan kemampuan dan aspirasi karirmu.", icon: <Briefcase size={22} />, redirectTo: "/lowongan-kerja", tag: "Job Matching", },];
+  {
+    title: "Analisis Skill",
+    description:
+      "AI membaca CV dan menganalisis skill teknis maupun soft skill secara otomatis.",
+    icon: <Sparkles size={22} />,
+    redirectTo: "/analisis-skill",
+    tag: "AI Analysis",
+  },
+
+  {
+    title: "Jalur Karir",
+    description:
+      "Dapatkan roadmap belajar dan pengembangan karir berdasarkan skill kamu.",
+    icon: <Target size={22} />,
+    redirectTo: "/jalur-karir",
+    tag: "Career Roadmap",
+  },
+
+  {
+    title: "Lowongan Pekerjaan",
+    description:
+      "Temukan lowongan yang cocok dengan kemampuan dan aspirasi karirmu.",
+    icon: <Briefcase size={22} />,
+    redirectTo: "/lowongan-kerja",
+    tag: "Job Matching",
+  },
+];
 
 const workflowSteps = [
-  { title: "Upload CV", description: "Upload CV format PDF atau DOCX.", icon: <Upload size={20} />, },
-  { title: "AI Analisis Skill", description: "AI membaca skill, pengalaman, dan potensi karir.", icon: <BrainCircuit size={20} />, },
-  { title: "Dapatkan Roadmap", description: "AI membuat jalur belajar dan karir personal.", icon: <Target size={20} />, },
-  { title: "Temukan Lowongan", description: "Lihat pekerjaan yang cocok dengan profilmu.", icon: <Briefcase size={20} />, },
+  {
+    title: "Upload CV",
+    description: "Upload CV format PDF atau DOCX.",
+    icon: <Upload size={20} />,
+  },
+
+  {
+    title: "AI Analisis Skill",
+    description:
+      "AI membaca skill, pengalaman, dan potensi karir.",
+    icon: <BrainCircuit size={20} />,
+  },
+
+  {
+    title: "Dapatkan Roadmap",
+    description:
+      "AI membuat jalur belajar dan karir personal.",
+    icon: <Target size={20} />,
+  },
+
+  {
+    title: "Temukan Lowongan",
+    description:
+      "Lihat pekerjaan yang cocok dengan profilmu.",
+    icon: <Briefcase size={20} />,
+  },
 ];
 
 const landingStats = [
   {
-    icon: <Sparkles size={20} className="text-[#025CB8]" />,
+    icon: (
+      <Sparkles
+        size={20}
+        className="text-[#025CB8]"
+      />
+    ),
+
     bgClass: "bg-blue-50",
+
     value: "94%",
+
     label: "Akurasi AI Matching",
   },
+
   {
-    icon: <Briefcase size={20} className="text-green-600" />,
+    icon: (
+      <Briefcase
+        size={20}
+        className="text-green-600"
+      />
+    ),
+
     bgClass: "bg-green-50",
+
     value: "10K+",
+
     label: "Lowongan IT",
   },
+
   {
-    icon: <Target size={20} className="text-purple-500" />,
+    icon: (
+      <Target
+        size={20}
+        className="text-purple-500"
+      />
+    ),
+
     bgClass: "bg-purple-50",
+
     value: "6+",
+
     label: "Jalur Karir",
   },
+
   {
-    icon: <Clock size={20} className="text-orange-500" />,
+    icon: (
+      <Clock
+        size={20}
+        className="text-orange-500"
+      />
+    ),
+
     bgClass: "bg-orange-50",
+
     value: "≤12",
+
     label: "Bulan Estimasi",
   },
 ];
 
 const dashboardSkills = [
-  { label: "Frontend Development", percent: "92%" },
-  { label: "UI/UX Design", percent: "78%" },
-  { label: "Data Analysis", percent: "65%" },
+  {
+    label: "Frontend Development",
+    percent: "92%",
+  },
+
+  {
+    label: "UI/UX Design",
+    percent: "78%",
+  },
+
+  {
+    label: "Data Analysis",
+    percent: "65%",
+  },
 ];
 
-const roadmapPreview = [
-  { title: "Frontend Fundamentals", progress: 100, state: "done", },
-  { title: "React Ecosystem", progress: 70, state: "progress", },
-  { title: "TypeScript Advanced", progress: 0, state: "locked", },];
+type RoadmapState =
+  | "done"
+  | "progress"
+  | "locked";
+
+const roadmapPreview: {
+  title: string;
+  progress: number;
+  state: RoadmapState;
+}[] = [
+  {
+    title: "Frontend Fundamentals",
+    progress: 100,
+    state: "done",
+  },
+
+  {
+    title: "React Ecosystem",
+    progress: 70,
+    state: "progress",
+  },
+
+  {
+    title: "TypeScript Advanced",
+    progress: 0,
+    state: "locked",
+  },
+];
 
 const heroStats = [
-  { value: "10K+", label: "Lowongan IT" },
-  { value: "25+", label: "Skill Dianalisis" },
-  { value: "AI", label: "Career Matching" },];
+  {
+    value: "10K+",
+    label: "Lowongan IT",
+  },
+
+  {
+    value: "25+",
+    label: "Skill Dianalisis",
+  },
+
+  {
+    value: "AI",
+    label: "Career Matching",
+  },
+];
 
 const Home = () => {
   const navigate = useNavigate();
 
-  const openPage = (path: string) => navigate(path);
+  const openPage = (path: string) => {
+    navigate(path);
+  };
 
-  const roadmapBadgeStyle = (state: string) => {
+  const roadmapBadgeStyle = (
+    state: RoadmapState
+  ) => {
     switch (state) {
       case "done":
         return "bg-green-500 text-white";
@@ -133,7 +239,7 @@ const Home = () => {
       <div className="min-h-screen flex flex-col bg-gray-50">
         <HeaderComponent />
 
-        <main className="flex-1 pt-[0px]">
+        <main className="flex-1">
 
           {/* hero */}
           <section
@@ -608,9 +714,11 @@ const Home = () => {
               </div>
             </MotionBlock>
           </section>
+
         </main>
       </div>
     </>
   );
 };
+
 export default Home;

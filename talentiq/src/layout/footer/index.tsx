@@ -83,8 +83,8 @@ const FooterComponent = () => {
     <footer className="relative overflow-hidden bg-[#061C3D] text-white">
 
       {/* bg blur biar ga flat */}
-      <div className="absolute left-0 top-0 h-[400px] w-[400px] rounded-full bg-[#025CB8]/20 blur-[80px]" />
-      <div className="absolute bottom-0 right-0 h-[350px] w-[350px] rounded-full bg-[#62AAEA]/10 blur-[80px]" />
+      <div className="absolute left-0 top-0 h-[400px] w-[400px] rounded-full bg-[#025CB8]/20 blur-xl" />
+      <div className="absolute bottom-0 right-0 h-[350px] w-[350px] rounded-full bg-[#62AAEA]/10 blur-xl" />
 
       <div className="relative z-10">
 

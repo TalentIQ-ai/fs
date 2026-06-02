@@ -1,3 +1,4 @@
+//src/routes/index.tsx
 import { Suspense } from 'react';
 
 import { BrowserRouter } from 'react-router-dom';

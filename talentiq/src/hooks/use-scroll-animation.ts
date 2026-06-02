@@ -17,15 +17,20 @@ export const useScrollAnimation = (
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const el = ref.current;
 
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-
           observer.unobserve(el);
         }
       },
@@ -58,7 +63,7 @@ export const animClass = (
   };
 
   return `${base} ${isVisible
-      ? "opacity-100 translate-x-0 translate-y-0"
-      : hiddenMap[direction]
+    ? "opacity-100 translate-x-0 translate-y-0"
+    : hiddenMap[direction]
     }`;
 };

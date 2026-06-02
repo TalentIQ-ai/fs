@@ -20,22 +20,42 @@ const HeaderComponent = () => {
   const [headerCompact, setHeaderCompact] = useState(false);
 
   useEffect(() => {
-    const syncHeaderState = () => {
-      const isShrink = window.scrollY > 30;
-      setHeaderCompact((prev) => (
-        prev !== isShrink ? isShrink : prev
-      ));
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const shrink = window.scrollY > 30;
+
+          setHeaderCompact((prev) =>
+            prev !== shrink ? shrink : prev
+          );
+
+          ticking = false;
+        });
+
+        ticking = true;
+      }
     };
 
-    window.addEventListener("scroll", syncHeaderState);
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      { passive: true }
+    );
 
     return () => {
-      window.removeEventListener("scroll", syncHeaderState);
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
     };
   }, []);
 
   useEffect(() => {
-    mobileMenuShown && setMobileMenuShown(false);
+    if (mobileMenuShown) {
+      setMobileMenuShown(false);
+    }
   }, [currentRoute.pathname]);
 
   const floatingMenuPosition = useMemo(
@@ -86,12 +106,12 @@ const HeaderComponent = () => {
               >
                 <img
                   src={logoHeader}
-                  alt="TalentIQ AI"
-                  width={60}
-                  height={0}
-                  loading="lazy"
+                  alt="TalentIQ AI Logo"
+                  width={180}
+                  height={50}
+                  fetchPriority="high"
                   decoding="async"
-                  className="mb-0 h-[20px] w-auto object-contain"
+                  className="h-8 w-auto object-contain"
                 />
               </Link>
 

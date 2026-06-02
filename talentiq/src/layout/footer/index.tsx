@@ -64,9 +64,18 @@ const contactInfo = [
 ];
 
 const footerLinks = [
-  "Kebijakan Privasi",
-  "Ketentuan Layanan",
-  "Komunitas",
+  {
+    text: "Kebijakan Privasi",
+    href: "/privacy-policy",
+  },
+  {
+    text: "Ketentuan Layanan",
+    href: "/terms",
+  },
+  {
+    text: "Komunitas",
+    href: "/community",
+  },
 ];
 
 const FooterComponent = () => {
@@ -74,8 +83,8 @@ const FooterComponent = () => {
     <footer className="relative overflow-hidden bg-[#061C3D] text-white">
 
       {/* bg blur biar ga flat */}
-      <div className="absolute left-0 top-0 h-[400px] w-[400px] rounded-full bg-[#025CB8]/20 blur-[120px]" />
-      <div className="absolute bottom-0 right-0 h-[350px] w-[350px] rounded-full bg-[#62AAEA]/10 blur-[120px]" />
+      <div className="absolute left-0 top-0 h-[400px] w-[400px] rounded-full bg-[#025CB8]/20 blur-[80px]" />
+      <div className="absolute bottom-0 right-0 h-[350px] w-[350px] rounded-full bg-[#62AAEA]/10 blur-[80px]" />
 
       <div className="relative z-10">
 
@@ -170,8 +179,12 @@ const FooterComponent = () => {
                 <Link to="/">
                   <img
                     src={footerLogo}
-                    alt="TalentIQ AI"
-                    className="mb-6 h-[42px] object-contain"
+                    alt="TalentIQ AI Logo"
+                    width={180}
+                    height={42}
+                    loading="lazy"
+                    decoding="async"
+                    className="mb-6 h-[42px] w-auto object-contain"
                   />
                 </Link>
 
@@ -208,9 +221,9 @@ const FooterComponent = () => {
 
               {/* platform */}
               <div>
-                <h2 className="mb-6 text-lg font-bold">
+                <h3 className="mb-6 text-lg font-bold">
                   Platform
-                </h2>
+                </h3>
 
                 <div className="flex flex-col gap-4">
                   {mainMenus.map((menu) => (
@@ -231,9 +244,9 @@ const FooterComponent = () => {
 
               {/* perusahaan */}
               <div>
-                <h2 className="mb-6 text-lg font-bold">
+                <h3 className="mb-6 text-lg font-bold">
                   Perusahaan
-                </h2>
+                </h3>
 
                 <div className="flex flex-col gap-4">
                   {companyMenus.map((companyMenu) => (
@@ -254,9 +267,9 @@ const FooterComponent = () => {
 
               {/* kontak */}
               <div>
-                <h2 className="mb-6 text-lg font-bold">
+                <h3 className="mb-6 text-lg font-bold">
                   Hubungi Kami
-                </h2>
+                </h3>
 
                 <div className="flex flex-col gap-5">
 
@@ -305,16 +318,17 @@ const FooterComponent = () => {
 
               <div className="flex flex-wrap items-center justify-center gap-5">
                 {footerLinks.map((footerMenu) => (
-                  <button
-                    key={footerMenu}
+                  <Link
+                    key={footerMenu.text}
+                    to={footerMenu.href}
                     className="
-                      text-sm text-white/50
-                      transition-colors duration-200
-                      hover:text-white
-                    "
+                    text-sm text-white/50
+                    transition-colors duration-200
+                    hover:text-white
+                  "
                   >
-                    {footerMenu}
-                  </button>
+                    {footerMenu.text}
+                  </Link>
                 ))}
               </div>
 

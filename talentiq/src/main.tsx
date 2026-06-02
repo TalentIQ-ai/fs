@@ -1,20 +1,27 @@
-import React from 'react';
+import React from "react";
+import ReactDOM from "react-dom/client";
 
-import ReactDOM from 'react-dom/client';
+import "./index.css";
 
-import './index.css';
-import QueryProvider from './provider/query-provider.tsx';
-import LayoutConfigProvider from './provider/theme-config-provider.tsx';
-import Routes from './routes/index.tsx';
-import { ToasterConfig } from '@/components';
+import QueryProvider from "./provider/query-provider";
+import LayoutConfigProvider from "./provider/theme-config-provider";
+import Routes from "./routes";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+import { ToasterConfig } from "@/components";
+
+import { HelmetProvider } from "react-helmet-async";
+
+ReactDOM.createRoot(
+  document.getElementById("root")!
+).render(
   <React.StrictMode>
     <LayoutConfigProvider>
       <QueryProvider>
-        <ToasterConfig />
-        <Routes />
+        <HelmetProvider>
+          <ToasterConfig />
+          <Routes />
+        </HelmetProvider>
       </QueryProvider>
     </LayoutConfigProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 );

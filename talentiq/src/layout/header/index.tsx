@@ -1,5 +1,5 @@
 //src/layout/header/index.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import logoHeader from "@/assets/logoheader.png";
@@ -58,11 +58,6 @@ const HeaderComponent = () => {
     }
   }, [currentRoute.pathname]);
 
-  const floatingMenuPosition = useMemo(
-    () => (headerCompact ? "top-[78px]" : "top-[86px]"),
-    [headerCompact]
-  );
-
   const goToLogin = () => redirect("/login");
 
   return (
@@ -92,10 +87,8 @@ const HeaderComponent = () => {
               className={`
                 flex items-center rounded-[26px]
                 transition-all duration-300
-                ${headerCompact
-                  ? "bg-white/95 backdrop-blur-xl px-5 py-3"
-                  : "bg-white/90 backdrop-blur-xl px-6 py-4"
-                }
+                bg-white/90 backdrop-blur-md px-6 py-4
+                ${headerCompact ? "shadow-xl" : "shadow-md"}
               `}
             >
 
@@ -107,7 +100,7 @@ const HeaderComponent = () => {
                 <img
                   src={logoHeader}
                   alt="TalentIQ AI Logo"
-                  width={180}
+                  width={140}
                   height={50}
                   fetchPriority="high"
                   decoding="async"
@@ -224,17 +217,17 @@ const HeaderComponent = () => {
       {/* menu hp */}
       <div
         className={`
-          fixed left-0 right-0 z-40 px-4 sm:px-8
-          transition-all duration-300 ease-in-out
-          ${floatingMenuPosition}
+            fixed left-0 right-0 z-40 px-4 sm:px-8
+            transition-all duration-300 ease-in-out
+            ${headerCompact ? "top-[78px]" : "top-[86px]"}
 
-          ${mobileMenuShown
+            ${mobileMenuShown
             ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 -translate-y-3 pointer-events-none"
           }
-        `}
+  `}
       >
-        <div className="max-w-7xl mx-auto overflow-hidden rounded-2xl border border-gray-100 bg-white/95 backdrop-blur-xl shadow-2xl">
+        <div className="max-w-7xl mx-auto overflow-hidden rounded-2xl border border-gray-100 bg-white/95 backdrop-blur-md shadow-2xl">
 
           <div className="flex flex-col gap-2 p-4">
 

@@ -17,15 +17,17 @@ export const useScrollAnimation = (
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined") return;
+
+    // disable anim mobile
+    if (window.innerWidth < 768) {
+      setIsVisible(true);
       return;
     }
 
     const el = ref.current;
 
-    if (!el) {
-      return;
-    }
+    if (!el) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -52,13 +54,14 @@ export const animClass = (
   isVisible: boolean,
   direction: "up" | "down" | "left" | "right" | "fade" = "up"
 ) => {
-  const base = "transition-all duration-700 ease-out";
+  const base =
+    "transition-transform transition-opacity duration-700 ease-out";
 
   const hiddenMap = {
-    up: "opacity-0 translate-y-10",
-    down: "opacity-0 -translate-y-10",
-    left: "opacity-0 translate-x-10",
-    right: "opacity-0 -translate-x-10",
+    up: "opacity-0 translate-y-6",
+    down: "opacity-0 -translate-y-6",
+    left: "opacity-0 translate-x-6",
+    right: "opacity-0 -translate-x-6",
     fade: "opacity-0",
   };
 

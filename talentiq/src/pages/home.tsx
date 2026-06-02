@@ -45,53 +45,15 @@ const MotionBlock = ({
 };
 
 const featureMenus = [
-  {
-    title: "Analisis Skill",
-    description:
-      "AI membaca CV dan menganalisis skill teknis maupun soft skill secara otomatis.",
-    icon: <Sparkles size={22} />,
-    redirectTo: "/analisis-skill",
-    tag: "AI Analysis",
-  },
-  {
-    title: "Jalur Karir",
-    description:
-      "Dapatkan roadmap belajar dan pengembangan karir berdasarkan skill kamu.",
-    icon: <Target size={22} />,
-    redirectTo: "/jalur-karir",
-    tag: "Career Roadmap",
-  },
-  {
-    title: "Lowongan Pekerjaan",
-    description:
-      "Temukan lowongan yang cocok dengan kemampuan dan aspirasi karirmu.",
-    icon: <Briefcase size={22} />,
-    redirectTo: "/lowongan-kerja",
-    tag: "Job Matching",
-  },
-];
+  { title: "Analisis Skill", description: "AI membaca CV dan menganalisis skill teknis maupun soft skill secara otomatis.", icon: <Sparkles size={22} />, redirectTo: "/analisis-skill", tag: "AI Analysis", },
+  { title: "Jalur Karir", description: "Dapatkan roadmap belajar dan pengembangan karir berdasarkan skill kamu.", icon: <Target size={22} />, redirectTo: "/jalur-karir", tag: "Career Roadmap", },
+  { title: "Lowongan Pekerjaan", description: "Temukan lowongan yang cocok dengan kemampuan dan aspirasi karirmu.", icon: <Briefcase size={22} />, redirectTo: "/lowongan-kerja", tag: "Job Matching", },];
 
 const workflowSteps = [
-  {
-    title: "Upload CV",
-    description: "Upload CV format PDF atau DOCX.",
-    icon: <Upload size={20} />,
-  },
-  {
-    title: "AI Analisis Skill",
-    description: "AI membaca skill, pengalaman, dan potensi karir.",
-    icon: <BrainCircuit size={20} />,
-  },
-  {
-    title: "Dapatkan Roadmap",
-    description: "AI membuat jalur belajar dan karir personal.",
-    icon: <Target size={20} />,
-  },
-  {
-    title: "Temukan Lowongan",
-    description: "Lihat pekerjaan yang cocok dengan profilmu.",
-    icon: <Briefcase size={20} />,
-  },
+  { title: "Upload CV", description: "Upload CV format PDF atau DOCX.", icon: <Upload size={20} />, },
+  { title: "AI Analisis Skill", description: "AI membaca skill, pengalaman, dan potensi karir.", icon: <BrainCircuit size={20} />, },
+  { title: "Dapatkan Roadmap", description: "AI membuat jalur belajar dan karir personal.", icon: <Target size={20} />, },
+  { title: "Temukan Lowongan", description: "Lihat pekerjaan yang cocok dengan profilmu.", icon: <Briefcase size={20} />, },
 ];
 
 const landingStats = [
@@ -128,28 +90,14 @@ const dashboardSkills = [
 ];
 
 const roadmapPreview = [
-  {
-    title: "Frontend Fundamentals",
-    progress: 100,
-    state: "done",
-  },
-  {
-    title: "React Ecosystem",
-    progress: 70,
-    state: "progress",
-  },
-  {
-    title: "TypeScript Advanced",
-    progress: 0,
-    state: "locked",
-  },
-];
+  { title: "Frontend Fundamentals", progress: 100, state: "done", },
+  { title: "React Ecosystem", progress: 70, state: "progress", },
+  { title: "TypeScript Advanced", progress: 0, state: "locked", },];
 
 const heroStats = [
   { value: "10K+", label: "Lowongan IT" },
   { value: "25+", label: "Skill Dianalisis" },
-  { value: "AI", label: "Career Matching" },
-];
+  { value: "AI", label: "Career Matching" },];
 
 const Home = () => {
   const navigate = useNavigate();
@@ -185,7 +133,7 @@ const Home = () => {
       <div className="min-h-screen flex flex-col bg-gray-50">
         <HeaderComponent />
 
-        <main className="flex-1">
+        <main className="flex-1 pt-[0px]">
 
           {/* hero */}
           <section

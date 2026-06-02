@@ -95,8 +95,7 @@ const AnalisisSkill = () => {
           ref={heroAnim.ref}
           className={`max-w-7xl mx-auto px-5 lg:px-8 pb-20 ${animClass(
             heroAnim.isVisible,
-            "up",
-            0
+            "up"
           )}`}
         >
           <div className="grid lg:grid-cols-2 gap-10 items-center">
@@ -217,8 +216,7 @@ const AnalisisSkill = () => {
           ref={benefitAnim.ref}
           className={`max-w-7xl mx-auto px-5 lg:px-8 pb-24 ${animClass(
             benefitAnim.isVisible,
-            "up",
-            0
+            "up"
           )}`}
         >
           <div className="text-center mb-12">
@@ -261,8 +259,7 @@ const AnalisisSkill = () => {
           ref={processAnim.ref}
           className={`max-w-6xl mx-auto px-5 lg:px-8 pb-24 ${animClass(
             processAnim.isVisible,
-            "up",
-            0
+            "up"
           )}`}
         >
           <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-8 lg:p-12">
@@ -322,8 +319,7 @@ const AnalisisSkill = () => {
           ref={closingAnim.ref}
           className={`max-w-6xl mx-auto px-5 lg:px-8 pb-24 ${animClass(
             closingAnim.isVisible,
-            "up",
-            0
+            "up"
           )}`}
         >
           <div

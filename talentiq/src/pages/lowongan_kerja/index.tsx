@@ -12,10 +12,21 @@ import {
 } from "lucide-react";
 
 import HeaderComponent from "@/layout/header";
-import {
-  useScrollAnimation,
-  animClass,
-} from "@/hooks/use-scroll-animation";
+import { useScrollAnimation } from "@/hooks/use-scroll-animation";
+
+const animClass = (
+  isVisible: boolean,
+  direction: "up" | "down",
+  _delay: number,
+  _duration = 300
+) => {
+  const base = "transition-all duration-300 ease-out";
+  const hidden = direction === "up"
+    ? "opacity-0 translate-y-10"
+    : "opacity-0 -translate-y-10";
+
+  return `${base} ${isVisible ? "opacity-100 translate-x-0 translate-y-0" : hidden}`;
+};
 
 // dummy data dulu, nanti tinggal ganti API
 const vacancyList = [
@@ -244,10 +255,6 @@ const AuthPopup = ({
           <Lock size={26} className="text-white" />
         </div>
 
-        <h2 className="text-white text-xl font-bold mb-1">
-          Fitur Eksklusif Member
-        </h2>
-
         <p className="text-white/80 text-sm">
           Login dulu buat lihat detail lowongan, analisis skill,
           sampai apply langsung.
@@ -331,14 +338,6 @@ const PremiumBanner = ({ onLogin }: { onLogin: () => void }) => {
       <div className="bg-gradient-to-r from-[#025CB8] to-[#62AAEA] p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="flex-1 text-center sm:text-left">
-            <div
-              className="inline-flex items-center gap-2 bg-white/20
-                         text-white text-xs font-bold
-                         px-3 py-1 rounded-full mb-3"
-            >
-              <Sparkles size={13} />
-              Fitur Eksklusif Member
-            </div>
 
             <h3 className="text-white text-xl sm:text-2xl font-bold mb-2">
               Mau tahu lowongan mana yang{" "}
@@ -536,12 +535,6 @@ export default function LowonganKerja() {
                      flex flex-col sm:flex-row items-center gap-6"
         >
           <div className="flex-1 text-center sm:text-left">
-            <p
-              className="text-white/70 text-xs font-bold
-                         uppercase tracking-wider mb-1"
-            >
-              Untuk Member TalentIQ AI
-            </p>
 
             <h3 className="text-white text-lg sm:text-xl font-bold mb-1">
               Lihat lowongan yang{" "}

@@ -1,3 +1,4 @@
+//src/pages/auth/profil/index.tsx
 import {
   ArrowRight,
   Award,
@@ -27,8 +28,6 @@ import {
   ActiveCourse,
   RecommendedCourse,
 } from "@/services/dashboard.service";
-
-// dummy dulu, nanti tinggal tarik API aja — dihapus, sekarang pakai data API
 
 // Palet warna kursus berdasarkan index
 const courseAccents = ["#025CB8", "#7C3AED", "#059669", "#EF4444", "#F59E0B", "#8B5CF6"];

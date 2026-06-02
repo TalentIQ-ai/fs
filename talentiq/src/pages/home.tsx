@@ -32,7 +32,7 @@ const MotionBlock = ({
   return (
     <div
       ref={ref}
-      className={`${animClass(isVisible, direction, 0)} ${className}`}
+      className={`${animClass(isVisible, direction)} ${className}`}
     >
       {children}
     </div>
@@ -180,20 +180,59 @@ const Home = () => {
         >
           <div className="absolute top-0 left-0 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl" />
+          <div
+            className="
+            absolute
+            top-1/2
+            left-1/2
+            -translate-x-1/2
+            -translate-y-1/2
+            w-[500px]
+            h-[500px]
+            bg-blue-400/10
+            rounded-full
+            blur-3xl
+          "
+          />
 
           <div className="relative z-10 max-w-7xl mx-auto px-5 lg:px-8 py-20 lg:py-28">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
 
               <MotionBlock direction="left">
-                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-full mb-6 backdrop-blur-sm">
-                  <Sparkles size={14} className="text-white" />
+                <div
+                  className="
+                  inline-flex
+                  items-center
+                  gap-1.5
+                  rounded-full
+                  border border-white/20
+                  bg-white/10
+                  backdrop-blur-sm
+                  px-2.5
+                  sm:px-4
+                  py-1.5
+                  mb-6
+                "
+                >
+                  <Sparkles
+                    size={14}
+                    className="text-white shrink-0"
+                  />
 
-                  <span className="text-white/90 text-xs font-bold">
+                  <span
+                    className="
+    text-white/90
+    text-[clamp(9px,2vw,12px)]
+    font-semibold
+    tracking-normal
+    leading-relaxed
+  "
+                  >
                     AI Career Intelligence Platform
                   </span>
                 </div>
 
-                <h1 className="text-white text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
+                <h1 className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
                   Bangun Karir IT
                   <span className="block text-[#DCEEFF]">
                     dengan Bantuan AI
@@ -206,7 +245,7 @@ const Home = () => {
                   menggunakan analisis AI modern berbasis data industri.
                 </p>
 
-                <div className="flex flex-wrap gap-4 mt-8">
+                <div className="flex flex-col sm:flex-row gap-4 mt-8">
                   <button
                     onClick={() => openPage("/analisis-skill")}
                     className="bg-white text-[#025CB8] font-bold px-7 py-4 rounded-2xl
@@ -227,11 +266,19 @@ const Home = () => {
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-4 mt-10">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mt-10">
                   {heroStats.map((statBox) => (
                     <div
                       key={statBox.label}
-                      className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl px-5 py-4"
+                      className="
+                      bg-white/10
+                      backdrop-blur-sm
+                      border border-white/10
+                      rounded-2xl
+                      px-4
+                      py-4
+                      text-center
+                      "
                     >
                       <p className="text-white text-2xl font-black">
                         {statBox.value}
@@ -247,13 +294,27 @@ const Home = () => {
 
               <MotionBlock direction="right">
                 <div className="relative">
-                  <div className="bg-white/95 backdrop-blur-md rounded-[32px] p-6 shadow-2xl border border-white/40">
+                  <div
+                    className="
+                  bg-white/95
+                  backdrop-blur-md
+                  rounded-[32px]
+                  p-6
+                  shadow-2xl
+                  border
+                  border-white/40
+                  hover:-translate-y-2
+                  hover:shadow-[0_25px_60px_rgba(0,0,0,0.15)]
+                  transition-all
+                  duration-500
+                  "
+                  >
 
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <h3 className="font-black text-gray-800 text-lg">
+                        <h2 className="font-black text-gray-800 text-lg">
                           AI Career Dashboard
-                        </h3>
+                        </h2>
 
                         <p className="text-gray-400 text-sm mt-1">
                           Personal career intelligence
@@ -366,7 +427,7 @@ const Home = () => {
         {/* quick stats */}
         <section className="max-w-7xl mx-auto px-5 lg:px-8 py-14">
           <MotionBlock>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {landingStats.map((statCard) => (
                 <div
                   key={statCard.label}
@@ -413,9 +474,22 @@ const Home = () => {
               <MotionBlock key={menuCard.title}>
                 <button
                   onClick={() => openPage(menuCard.redirectTo)}
-                  className="group w-full bg-white rounded-[32px] border border-gray-100 shadow-sm
-                  hover:shadow-2xl transition-all duration-300
-                  hover:-translate-y-1 overflow-hidden text-left"
+                  className="
+                  group
+                  w-full
+                  bg-white
+                  rounded-[32px]
+                  border
+                  border-gray-100
+                  shadow-sm
+                  hover:border-[#62AAEA]
+                  hover:shadow-2xl
+                  hover:-translate-y-1
+                  transition-all
+                  duration-300
+                  overflow-hidden
+                  text-left
+                  "
                 >
                   <div className="h-1.5 w-full bg-gradient-to-r from-[#025CB8] to-[#62AAEA]" />
 
@@ -478,7 +552,15 @@ const Home = () => {
                 {workflowSteps.map((stepCard) => (
                   <div
                     key={stepCard.title}
-                    className="text-center relative"
+                    className="
+                    text-center
+                    relative
+                    p-4
+                    rounded-2xl
+                    hover:bg-gray-50
+                    transition-all
+                    duration-300
+                  "
                   >
                     <div
                       className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center
@@ -509,7 +591,15 @@ const Home = () => {
         <section className="max-w-6xl mx-auto px-5 lg:px-8 pb-24">
           <MotionBlock>
             <div
-              className="rounded-[32px] p-10 lg:p-14 text-center shadow-2xl"
+              className="
+              relative
+              overflow-hidden
+              rounded-[32px]
+              p-10
+              lg:p-14
+              text-center
+              shadow-2xl
+              "
               style={{
                 background:
                   "linear-gradient(135deg, #025CB8, #3B82C4)",

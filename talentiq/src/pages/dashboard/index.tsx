@@ -325,12 +325,7 @@ const FadeSection = ({
   return (
     <div
       ref={ref}
-      className={`${animClass(
-        isVisible,
-        direction,
-        700,
-        direction
-      )} ${extraClass}`}
+      className={`${animClass(isVisible, direction)} ${extraClass}`}
     >
       {children}
     </div>
@@ -499,7 +494,7 @@ const Dashboard = () => {
         >
           <div className="min-h-[80vh] flex flex-col justify-center items-center p-6 text-center">
             <div className="bg-red-50 text-red-500 px-6 py-4 rounded-2xl border border-red-200 max-w-md shadow-sm">
-              <h3 className="font-bold text-lg mb-2">Terjadi Kesalahan</h3>
+              <h2 className="font-bold text-lg mb-2">Terjadi Kesalahan</h2>
               <p className="text-sm mb-4">{error}</p>
               <button
                 onClick={() => window.location.reload()}
@@ -572,9 +567,9 @@ const Dashboard = () => {
                 </div>
 
                 <div className="flex-1 text-center md:text-left relative z-10">
-                  <h3 className="text-lg font-black text-gray-800 mb-1">
+                  <h2 className="text-lg font-black text-gray-800 mb-1">
                     Mulai Perjalanan Karir AI Anda! 🚀
-                  </h3>
+                  </h2>
                   <p className="text-sm text-gray-500 max-w-xl">
                     Anda belum menentukan target karir atau mengunggah CV.
                     Unggah CV atau pilih target role Anda sekarang untuk mendapatkan analisis kesiapan kerja, peta belajar, dan rekomendasi kursus berbasis AI.
@@ -1221,9 +1216,9 @@ const Dashboard = () => {
                           {courseItem.field}
                         </span>
 
-                        <h3 className="mb-3 text-sm font-bold leading-tight text-gray-800 transition-colors group-hover:text-[#025CB8]">
+                        <p className="mb-3 text-sm font-bold leading-tight text-gray-800 transition-colors group-hover:text-[#025CB8]">
                           {courseItem.title}
-                        </h3>
+                        </p>
 
                         <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-3">
                           <div className="flex flex-col">
@@ -1290,9 +1285,9 @@ const Dashboard = () => {
                     />
                   </div>
 
-                  <h3 className="mb-1 text-base font-bold text-white">
+                  <h2 className="mb-1 text-base font-bold text-white">
                     Lowongan Buat Kamu
-                  </h3>
+                  </h2>
 
                   <p className="mb-5 text-sm leading-relaxed text-blue-100">
                     <span className="text-lg font-black text-white">
@@ -1335,9 +1330,9 @@ const Dashboard = () => {
                     />
                   </div>
 
-                  <h3 className="mb-1 text-base font-bold text-white">
+                  <h2 className="mb-1 text-base font-bold text-white">
                     Jalur Belajar
-                  </h3>
+                  </h2>
 
                   <p className="mb-5 text-sm leading-relaxed text-purple-100">
                     {missingSkills.length > 0

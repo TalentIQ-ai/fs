@@ -1,3 +1,5 @@
+//src/hooks/use-scroll-animation.ts
+
 import { useEffect, useRef, useState } from "react";
 
 interface UseScrollAnimationOptions {
@@ -42,7 +44,9 @@ export const useScrollAnimation = (
 };
 
 export const animClass = (
-isVisible: boolean, p0: string, p1: number, direction: "up" | "down" | "left" | "right" | "fade" = "up") => {
+  isVisible: boolean,
+  direction: "up" | "down" | "left" | "right" | "fade" = "up"
+) => {
   const base = "transition-all duration-700 ease-out";
 
   const hiddenMap = {
@@ -54,7 +58,7 @@ isVisible: boolean, p0: string, p1: number, direction: "up" | "down" | "left" | 
   };
 
   return `${base} ${isVisible
-    ? "opacity-100 translate-x-0 translate-y-0"
-    : hiddenMap[direction]
+      ? "opacity-100 translate-x-0 translate-y-0"
+      : hiddenMap[direction]
     }`;
 };

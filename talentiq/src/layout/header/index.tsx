@@ -1,3 +1,4 @@
+//src/layout/header/index.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -86,10 +87,11 @@ const HeaderComponent = () => {
                 <img
                   src={logoHeader}
                   alt="TalentIQ AI"
-                  className={`
-                    object-contain transition-all duration-300
-                    ${headerCompact ? "h-[22px]" : "h-[28px]"}
-                  `}
+                  width={60}
+                  height={0}
+                  loading="lazy"
+                  decoding="async"
+                  className="mb-0 h-[20px] w-auto object-contain"
                 />
               </Link>
 

@@ -155,3 +155,14 @@
     filter 1s ease,
     transform 1s ease;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+}
+* {
+  -webkit-tap-highlight-color: transparent;
+}

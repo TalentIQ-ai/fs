@@ -1,5 +1,3 @@
-//src/hooks/use-scroll-animation.ts
-
 import { useEffect, useRef, useState } from "react";
 
 interface UseScrollAnimationOptions {
@@ -7,33 +5,43 @@ interface UseScrollAnimationOptions {
   rootMargin?: string;
 }
 
+type AnimationDirection =
+  | "up"
+  | "down"
+  | "left"
+  | "right"
+  | "fade";
+
 export const useScrollAnimation = (
   options: UseScrollAnimationOptions = {}
 ) => {
-  const { threshold = 0.15, rootMargin = "0px 0px -50px 0px" } = options;
+  const {
+    threshold = 0.15,
+    rootMargin = "0px 0px -50px 0px",
+  } = options;
 
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
 
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // disable anim mobile
+    // disable animation di mobile
     if (window.innerWidth < 768) {
       setIsVisible(true);
       return;
     }
 
-    const el = ref.current;
+    const currentElement = ref.current;
 
-    if (!el) return;
+    if (!currentElement) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.unobserve(el);
+          observer.unobserve(entry.target);
         }
       },
       {
@@ -42,22 +50,27 @@ export const useScrollAnimation = (
       }
     );
 
-    observer.observe(el);
+    observer.observe(currentElement);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, [threshold, rootMargin]);
 
-  return { ref, isVisible };
+  return {
+    ref,
+    isVisible,
+  };
 };
 
 export const animClass = (
   isVisible: boolean,
-  direction: "up" | "down" | "left" | "right" | "fade" = "up"
+  direction: AnimationDirection = "up"
 ) => {
-  const base =
-    "transition-transform transition-opacity duration-700 ease-out";
+  const baseClass =
+    "transition-all duration-700 ease-out will-change-transform";
 
-  const hiddenMap = {
+  const hiddenClassMap: Record<AnimationDirection, string> = {
     up: "opacity-0 translate-y-6",
     down: "opacity-0 -translate-y-6",
     left: "opacity-0 translate-x-6",
@@ -65,8 +78,13 @@ export const animClass = (
     fade: "opacity-0",
   };
 
-  return `${base} ${isVisible
-    ? "opacity-100 translate-x-0 translate-y-0"
-    : hiddenMap[direction]
+  const visibleClass =
+    "opacity-100 translate-x-0 translate-y-0";
+
+  return `${baseClass} ${isVisible
+    ? visibleClass
+    : hiddenClassMap[direction]
     }`;
 };
+
+export type { AnimationDirection };

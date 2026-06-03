@@ -30,17 +30,17 @@ const companyMenus = [
 const socialMediaList = [
   {
     title: "Instagram",
-    url: "#",
+    url: "https://instagram.com",
     icon: <FaInstagram size={18} />,
   },
   {
     title: "Twitter X",
-    url: "#",
+    url: "https://twitter.com",
     icon: <FaXTwitter size={18} />,
   },
   {
     title: "LinkedIn",
-    url: "#",
+    url: "https://linkedin.com",
     icon: <FaLinkedin size={18} />,
   },
 ];

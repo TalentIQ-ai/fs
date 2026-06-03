@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import StarBorder from "@/components/StarBorder";
 import { loginUser, saveToken } from "@/services/auth.service";
-import bg from "@/assets/bg.jpg";
+import bg from "@/assets/bg.webp";
 
 const Login = () => {
   const navigate = useNavigate();

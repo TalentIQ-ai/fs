@@ -1069,7 +1069,7 @@ const AnalisisSkill = () => {
                             )
                           }
                           placeholder="Contoh: React, Laravel, PostgreSQL..."
-                          className="w-full mt-2 rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:border-[#025CB8] resize-none"
+                          className="w-full mt-2 rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:border-[#025CB8] resize-none text-gray-800"
                         />
                       </div>
                     </div>

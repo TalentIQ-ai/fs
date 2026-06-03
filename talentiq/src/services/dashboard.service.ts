@@ -48,6 +48,8 @@ export interface DashboardSummary {
   };
   lastUpdated: string;
   readinessScore: number;
+  readinessStatus: string;
+  jobCount: number;
   targetRole: string;
   ownedSkills: string[];
   neededSkills: string[];

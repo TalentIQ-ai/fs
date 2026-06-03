@@ -30,7 +30,7 @@ import { enrollCourseService, getRecommendationsService, getMyCoursesService, Us
 
 
 // progress circle
-const ScoreCircle = ({ score }: { score: number }) => {
+const ScoreCircle = ({ score, status }: { score: number; status: string }) => {
   const size = 58;
   const line = 2 * Math.PI * size;
   const stroke = line - (score / 100) * line;
@@ -88,7 +88,7 @@ const ScoreCircle = ({ score }: { score: number }) => {
         </span>
 
         <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-          siap kerja
+          {status}
         </span>
       </div>
     </div>
@@ -139,28 +139,28 @@ const roadmapState = {
   done: {
     label: "Selesai",
     icon: <CheckCircle2 size={20} />,
-    ring: "ring-2 ring-green-200",
+    ring: "border-2 border-green-300",
     text: "text-green-600",
   },
 
   active: {
     label: "Sedang",
     icon: <Loader2 size={20} className="animate-spin" />,
-    ring: "ring-2 ring-blue-300",
+    ring: "border-2 border-blue-400",
     text: "text-[#025CB8]",
   },
 
   next: {
     label: "Berikutnya",
     icon: <Clock size={20} />,
-    ring: "ring-2 ring-orange-200",
+    ring: "border-2 border-orange-300",
     text: "text-orange-500",
   },
 
   later: {
     label: "Mendatang",
     icon: <Clock size={20} />,
-    ring: "ring-2 ring-gray-200",
+    ring: "border-2 border-gray-300",
     text: "text-gray-400",
   },
 };
@@ -288,6 +288,8 @@ const Dashboard = () => {
 
   const updatedAt = dashboardData?.lastUpdated || "Baru saja";
   const jobReadyScore = dashboardData?.readinessScore ?? 0;
+  const readinessStatus = dashboardData?.readinessStatus || "Baru Memulai";
+  const jobCount = dashboardData?.jobCount ?? 0;
   const dreamRole = dashboardData?.targetRole || "Belum ditentukan";
 
   const masteredSkills = dashboardData?.ownedSkills || [];
@@ -745,10 +747,10 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <>
-                    <ScoreCircle score={jobReadyScore} />
+                    <ScoreCircle score={jobReadyScore} status={readinessStatus} />
 
                     <p className="mt-4 text-center text-sm font-semibold text-[#025CB8]">
-                      Siap kerja sebagai
+                      {readinessStatus}
                     </p>
 
                     <p className="text-center text-base font-black text-gray-800">
@@ -1315,13 +1317,17 @@ const Dashboard = () => {
                   </h3>
 
                   <p className="mb-5 text-sm leading-relaxed text-blue-100">
-                    <span className="text-lg font-black text-white">
-                      {missingSkills.length > 0 ? missingSkills.length : ""}
-                    </span>{" "}
-                    {missingSkills.length > 0
-                      ? `lowongan cocok buat role ${dreamRole}`
-                      : `Temukan lowongan untuk ${dreamRole}`
-                    }
+                    {jobCount > 0 ? (
+                      <>
+                        <span className="text-lg font-black text-white">{jobCount}</span>{" "}
+                        lowongan tersedia untuk role{" "}
+                        <span className="font-bold">{dreamRole}</span>
+                      </>
+                    ) : dreamRole !== "Belum ditentukan" ? (
+                      <>Temukan lowongan untuk <span className="font-bold">{dreamRole}</span></>
+                    ) : (
+                      "Temukan lowongan yang cocok untuk karir impianmu"
+                    )}
                   </p>
 
                   <button className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-[#025CB8] shadow transition-all duration-200 hover:shadow-md group-hover:gap-3">
@@ -1335,7 +1341,7 @@ const Dashboard = () => {
               {/* belajar */}
               <div
                 onClick={() =>
-                  navigate("/jalur-karir")
+                  navigate("/auth/roadmap-karir")
                 }
                 className="group relative cursor-pointer overflow-hidden rounded-2xl p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                 style={{

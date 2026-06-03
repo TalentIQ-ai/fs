@@ -171,10 +171,16 @@ const prettyFileSize = (size: number) => {
 const updateSelectedValue = (
   currentValue: string[],
   nextValue: string
-) =>
-  currentValue.includes(nextValue)
-    ? currentValue.filter((entry) => entry !== nextValue)
+) => {
+  const exists = currentValue.some(
+    (entry) => entry.toLowerCase() === nextValue.toLowerCase()
+  );
+  return exists
+    ? currentValue.filter(
+        (entry) => entry.toLowerCase() !== nextValue.toLowerCase()
+      )
     : [...currentValue, nextValue];
+};
 
 // pilih industri
 const IndustryPicker = ({
@@ -279,8 +285,9 @@ const SkillPicker = ({
   return (
     <div className="flex flex-wrap gap-2 mt-2">
       {availableSkills.map((skillName) => {
-        const checked =
-          selectedSkills.includes(skillName);
+        const checked = selectedSkills.some(
+          (s) => s.toLowerCase() === skillName.toLowerCase()
+        );
 
         return (
           <button
@@ -329,13 +336,12 @@ const CvLoadingOverlay = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [loadingPercent, setLoadingPercent] = useState(0);
 
+  const currentPctRef = useRef(0);
+  const step1TimerRef = useRef(0);
+
   useEffect(() => {
     let active = true;
     let step = 0;
-    let currentPct = 0;
-
-    let step1Timer = 0;
-    const step1Duration = 800; // 800ms for reading CV
 
     const interval = setInterval(() => {
       if (!active) return;
@@ -348,11 +354,11 @@ const CvLoadingOverlay = ({
         targetPct = Math.round(uploadProgress * 0.25); // 0% to 25%
       } else if (!apiCompleted) {
         // Upload complete, waiting/processing API
-        if (step1Timer < step1Duration) {
+        if (step1TimerRef.current < 800) {
           // Step 1: Reading CV (mock animation)
           step = 1;
-          step1Timer += 30;
-          const ratio = step1Timer / step1Duration;
+          step1TimerRef.current += 30;
+          const ratio = step1TimerRef.current / 800;
           targetPct = 25 + Math.round(ratio * 25); // 25% to 50%
         } else {
           // Step 2: Detecting skills (AI processing)
@@ -369,14 +375,14 @@ const CvLoadingOverlay = ({
       setCurrentStep(step);
 
       // Smoothly interpolate loadingPercent towards targetPct
-      if (currentPct < targetPct) {
+      if (currentPctRef.current < targetPct) {
         const stepSize = step === 3 ? 3 : 1.5;
-        currentPct = Math.min(currentPct + stepSize, targetPct);
-        setLoadingPercent(Math.round(currentPct));
+        currentPctRef.current = Math.min(currentPctRef.current + stepSize, targetPct);
+        setLoadingPercent(Math.round(currentPctRef.current));
       }
 
       // Check for finish completion
-      if (apiCompleted && currentPct >= 100) {
+      if (apiCompleted && currentPctRef.current >= 100) {
         clearInterval(interval);
         setTimeout(() => {
           if (active) onFinish();
@@ -512,7 +518,7 @@ const AnalisisSkill = () => {
   const [preferredIndustries, setPreferredIndustries] =
     useState<string[]>([]);
 
-  const [manualSkills, setManualSkills] =
+  const [manualSkillInput, setManualSkillInput] =
     useState("");
 
   const [selectedSkillTags, setSelectedSkillTags] =
@@ -647,18 +653,11 @@ const AnalisisSkill = () => {
     setSaveError(null);
     setIsSaving(true);
     try {
-      const combinedSkills = [
-        ...selectedSkillTags,
-        ...manualSkills
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      ];
       await updateProfileService({
         name: "",
         targetRole: careerTarget,
         experienceLevel: careerLevel,
-        skills: combinedSkills,
+        skills: selectedSkillTags,
       });
       navigate("/dashboard");
     } catch (err: any) {
@@ -675,10 +674,9 @@ const AnalisisSkill = () => {
     return Boolean(
       careerLevel !== "" ||
       preferredIndustries.length > 0 ||
-      selectedSkillTags.length > 0 ||
-      manualSkills.trim() !== ""
+      selectedSkillTags.length > 0
     );
-  }, [careerLevel, preferredIndustries, selectedSkillTags, manualSkills]);
+  }, [careerLevel, preferredIndustries, selectedSkillTags]);
 
   const shouldSaveManual = useMemo(() => {
     return (
@@ -1039,7 +1037,34 @@ const AnalisisSkill = () => {
 
                       <div>
                         <label className="text-xs font-semibold text-gray-600">
-                          Pilih Skill
+                          Skill yang Dipilih
+                        </label>
+                        <div className="flex min-h-[48px] flex-wrap gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 mt-2">
+                          {selectedSkillTags.length === 0 ? (
+                            <span className="text-xs text-gray-400">Belum ada skill yang dipilih</span>
+                          ) : (
+                            selectedSkillTags.map((skillName) => (
+                              <span
+                                key={skillName}
+                                className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-bold text-gray-700 shadow-sm"
+                              >
+                                {skillName}
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedSkillTags(prev => prev.filter(s => s !== skillName))}
+                                  className="text-gray-400 transition-colors hover:text-red-500"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600">
+                          Pilih Skill (dari Industri Pilihan)
                         </label>
 
                         <SkillPicker
@@ -1057,19 +1082,43 @@ const AnalisisSkill = () => {
 
                       <div>
                         <label className="text-xs font-semibold text-gray-600">
-                          Tambah Skill Manual
+                          Tambah Skill Manual (Tekan Enter)
                         </label>
 
-                        <textarea
-                          rows={4}
-                          value={manualSkills}
+                        <input
+                          type="text"
+                          value={manualSkillInput}
                           onChange={(e) =>
-                            setManualSkills(
+                            setManualSkillInput(
                               e.target.value
                             )
                           }
-                          placeholder="Contoh: React, Laravel, PostgreSQL..."
-                          className="w-full mt-2 rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:border-[#025CB8] resize-none text-gray-800"
+                          onKeyDown={(e) => {
+                            const cleanSkill = manualSkillInput.trim();
+                            if (e.key === "Enter" && cleanSkill) {
+                              e.preventDefault();
+                              const formattedSkill = cleanSkill
+                                .split(" ")
+                                .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                                .join(" ");
+                              
+                              const matchedAvailableSkill = availableSkills.find(
+                                (s) => s.toLowerCase() === cleanSkill.toLowerCase()
+                              );
+                              
+                              const finalSkill = matchedAvailableSkill || formattedSkill;
+
+                              setSelectedSkillTags((prev) => {
+                                const isAlreadySelected = prev.some(
+                                  (s) => s.toLowerCase() === finalSkill.toLowerCase()
+                                );
+                                return isAlreadySelected ? prev : [...prev, finalSkill];
+                              });
+                              setManualSkillInput("");
+                            }
+                          }}
+                          placeholder="Ketik skill lalu tekan enter..."
+                          className="w-full mt-2 rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:border-[#025CB8] text-gray-800 text-sm"
                         />
                       </div>
                     </div>

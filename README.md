@@ -52,7 +52,6 @@ Proyek ini dibangun sebagai bagian dari **Capstone Project** dengan pendekatan f
 | Repository | Deskripsi | Link |
 |---|---|---|
 | `talentiq` | Frontend — React + TypeScript + Vite | [→ Folder](./talentiq) |
-| `talentiq-api` | Backend API — REST API layer | [→ Folder](./talentiq-api) |
 | `be-talentiq` | Backend Service — Core AI & Business Logic | [→ Folder](./be-talentiq) |
 
 ---
@@ -162,13 +161,11 @@ capstone/
 │   ├── index.html
 │   ├── vite.config.ts
 │   ├── tailwind.config.ts
-│   └── package.json
+│   |── package.json
+│   └── 📄 README.md              # ← Anda sedang membaca ini
 │
-├── 📂 talentiq-api/          # Backend API Layer
-│
-├── 📂 be-talentiq/           # Backend Service & AI Core
-│
-└── 📄 README.md              # ← Anda sedang membaca ini
+└── 📂 be-talentiq/           # Backend Service & AI Core
+
 ```
 
 ---

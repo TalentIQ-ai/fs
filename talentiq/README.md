@@ -20,20 +20,6 @@
 
 </div>
 
-## 📸 Screenshot
-
-> Tampilan platform TalentIQ AI
-
-| Halaman | Preview |
-|---|---|
-| 🏠 Landing Page | *(Screenshot akan ditambahkan setelah deployment)* |
-| 📊 Dashboard | *(Screenshot akan ditambahkan setelah deployment)* |
-| 📄 Analisis CV | *(Screenshot akan ditambahkan setelah deployment)* |
-| 🗺️ Roadmap Karir | *(Screenshot akan ditambahkan setelah deployment)* |
-| 💼 Lowongan Kerja | *(Screenshot akan ditambahkan setelah deployment)* |
-
----
-
 ## 📋 Daftar Isi
 
 - [Tentang Proyek](#-tentang-proyek)
@@ -64,7 +50,6 @@ Proyek ini dibangun sebagai bagian dari **Capstone Project** dengan pendekatan f
 | Repository | Deskripsi | Link |
 |---|---|---|
 | `talentiq` | Frontend — React + TypeScript + Vite | [→ Folder](./talentiq) |
-| `talentiq-api` | Backend API — REST API layer | [→ Folder](./talentiq-api) |
 | `be-talentiq` | Backend Service — Core AI & Business Logic | [→ Folder](./be-talentiq) |
 
 ---
@@ -175,12 +160,11 @@ capstone/
 │   ├── vite.config.ts
 │   ├── tailwind.config.ts
 │   └── package.json
+|   └── 📄 README.md              # ← Anda sedang membaca ini
 │
-├── 📂 talentiq-api/          # Backend API Layer
+|
 │
 ├── 📂 be-talentiq/           # Backend Service & AI Core
-│
-└── 📄 README.md              # ← Anda sedang membaca ini
 ```
 
 ---

@@ -210,8 +210,16 @@ const Register = () => {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 text-white py-3 rounded-xl font-semibold shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 mt-2"
+                disabled={
+                  loading ||
+                  !form.name.trim() ||
+                  !form.email.trim() ||
+                  !form.password ||
+                  form.password.length < 6 ||
+                  form.password !== form.confirmPassword ||
+                  !agree
+                }
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300 text-white py-3 rounded-xl font-semibold shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 mt-2"
               >
                 {loading ? (
                   <>

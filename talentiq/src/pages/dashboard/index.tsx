@@ -25,7 +25,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/common/sidebar";
 import { animClass, useScrollAnimation } from "@/hooks/use-scroll-animation";
 import { getDashboardSummary, DashboardSummary } from "@/services/dashboard.service";
-import { enrollCourseService, getRecommendationsService, getMyCoursesService } from "@/services/course.service";
+import { enrollCourseService, getRecommendationsService, getMyCoursesService, UserCourse } from "@/services/course.service";
 
 
 
@@ -194,6 +194,7 @@ const Dashboard = () => {
 
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
   const [llmRecs, setLlmRecs] = useState<any[]>([]);
+  const [myCoursesList, setMyCoursesList] = useState<UserCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingRecs, setLoadingRecs] = useState(true);
   const [error, setError] = useState("");
@@ -221,8 +222,12 @@ const Dashboard = () => {
         getMyCoursesService().catch(() => null)
       ]);
 
+      // Simpan kursus user
+      const coursesList = myCoursesRes || [];
+      setMyCoursesList(coursesList);
+
       const enrolledIds = new Set<number>(
-        (myCoursesRes || []).map((c: any) => c.courseId || c.id)
+        coursesList.map((c: any) => c.courseId || c.id)
       );
       setEnrolledCourseIds(enrolledIds);
 
@@ -291,28 +296,73 @@ const Dashboard = () => {
   // Apakah user sudah pernah upload/scan CV?
   const hasSkillData = masteredSkills.length > 0 || missingSkills.length > 0;
 
-  const learningJourney = useMemo(() => {
-    if (!dashboardData?.roadmap || dashboardData.roadmap.length === 0) {
-      return [];
-    }
-    return dashboardData.roadmap.map((step) => {
-      let displayTitle = step.title;
-      // Remove "Minggu X: " prefix from the AI output because we already have duration info
-      const match = step.title.match(/^(Minggu\s+\d+):\s*(.*)$/i);
-      if (match) {
-        displayTitle = match[2];
-        displayTitle = displayTitle.charAt(0).toUpperCase() + displayTitle.slice(1);
-      }
+  // Tipe item roadmap yang dirender di dashboard
+  interface RoadmapItem {
+    id: number | string;
+    index: number;
+    courseName: string;
+    skillsText: string;
+    state: "active" | "next" | "done" | "later";
+    isRecommendation?: boolean;
+  }
 
-      return {
-        id: step.id,
-        title: displayTitle,
-        state: step.status === "upcoming" ? "later" : (step.status as any),
-        estimate: step.duration,
-        progress: step.progress,
-      };
-    });
-  }, [dashboardData]);
+  const learningJourney = useMemo((): RoadmapItem[] => {
+    const MAX_ITEMS = 5;
+
+    // ── Kondisi A: user sudah punya kursus ────────────────────────────────
+    if (myCoursesList.length > 0) {
+      // Urutkan: active dulu, lalu completed
+      const sorted = [...myCoursesList].sort((a, b) => {
+        if (a.status === "active" && b.status !== "active") return -1;
+        if (a.status !== "active" && b.status === "active") return 1;
+        return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
+      });
+
+      return sorted.slice(0, MAX_ITEMS).map((uc, idx) => {
+        // Ambil skill dari skills_taught (sudah diparse di service)
+        const skillsArr = uc.skills || [];
+        const skillsText = skillsArr.slice(0, 2).join(" & ") || uc.category || "skill baru";
+
+        let state: RoadmapItem["state"] = "next";
+        if (uc.status === "completed") state = "done";
+        else if (uc.status === "active" && idx === 0) state = "active";
+        else if (uc.status === "active") state = "next";
+
+        return {
+          id: uc.id,
+          index: idx + 1,
+          courseName: uc.courseName,
+          skillsText,
+          state,
+          isRecommendation: false,
+        };
+      });
+    }
+
+    // ── Kondisi B: fallback ke rekomendasi LLM ────────────────────────────
+    if (llmRecs.length > 0) {
+      return llmRecs.slice(0, MAX_ITEMS).map((rec: any, idx) => {
+        const courseName = rec.course?.course_name || "Kursus Rekomendasi";
+        const taught = rec.course?.skills_taught
+          ? rec.course.skills_taught.split(",").map((s: string) => s.trim()).filter(Boolean)
+          : [];
+        const matched = rec.matchedSkills || [];
+        const allSkills = Array.from(new Set([...matched, ...taught]));
+        const skillsText = allSkills.slice(0, 2).join(" & ") || rec.course?.category || "skill baru";
+
+        return {
+          id: rec.course?.id || rec.courseId || idx,
+          index: idx + 1,
+          courseName,
+          skillsText,
+          state: idx === 0 ? "active" : "next",
+          isRecommendation: true,
+        };
+      });
+    }
+
+    return [];
+  }, [myCoursesList, llmRecs]);
 
   // Mapping ikon berdasarkan kategori keyword — bukan nama persis
   const getSkillIcon = (name: string) => {
@@ -739,8 +789,8 @@ const Dashboard = () => {
           {/* roadmap */}
           <FadeSection>
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md">
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
                     <BookOpen
                       size={16}
@@ -748,9 +798,16 @@ const Dashboard = () => {
                     />
                   </div>
 
-                  <h2 className="font-bold text-gray-800">
-                    Roadmap Karir
-                  </h2>
+                  <div>
+                    <h2 className="font-bold text-gray-800">
+                      {myCoursesList.length > 0 ? "Roadmap Kursus Kamu" : "Roadmap Rekomendasi"}
+                    </h2>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {myCoursesList.length > 0
+                        ? "Berdasarkan kursus yang sedang diikuti"
+                        : "Rekomendasi AI berdasarkan skill gap kamu"}
+                    </p>
+                  </div>
                 </div>
 
                 <button
@@ -768,29 +825,29 @@ const Dashboard = () => {
 
               {/* desktop */}
               <div className="hidden items-start overflow-x-auto pb-2 lg:flex">
-                {learningJourney.length === 0 ? (
+                {loadingRecs ? (
+                  <div className="w-full flex flex-col items-center justify-center py-10 text-center">
+                    <Loader2 size={28} className="text-[#025CB8] animate-spin mb-3" />
+                    <p className="text-xs text-gray-400">Memuat roadmap...</p>
+                  </div>
+                ) : learningJourney.length === 0 ? (
                   <div className="w-full flex flex-col items-center justify-center py-10 text-center">
                     <BookOpen size={32} className="text-gray-200 mb-3" />
                     <p className="text-sm font-bold text-gray-400">Roadmap belum terbentuk</p>
-                    <p className="text-xs text-gray-300 mt-1">Tentukan target karir & upload CV untuk membuat roadmap AI-mu</p>
+                    <p className="text-xs text-gray-300 mt-1">Daftar kursus atau upload CV untuk memulai roadmap</p>
                     <button
-                      onClick={() => navigate("/auth/user-analisis-skill")}
+                      onClick={() => navigate("/auth/roadmap-karir")}
                       className="mt-4 px-4 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
                       style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
                     >
-                      Mulai Analisis CV →
+                      Jelajahi Kursus →
                     </button>
                   </div>
                 ) : (
                   <>
                     {learningJourney.map((phase, index) => {
-                      const currentStep =
-                        roadmapState[
-                        phase.state as keyof typeof roadmapState
-                        ];
-
-                      const lastIndex =
-                        index === learningJourney.length - 1;
+                      const currentStep = roadmapState[phase.state as keyof typeof roadmapState];
+                      const lastIndex = index === learningJourney.length - 1;
 
                       return (
                         <div
@@ -799,49 +856,42 @@ const Dashboard = () => {
                         >
                           {!lastIndex && (
                             <div
-                              className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${phase.state === "done"
-                                ? "bg-green-300"
-                                : "bg-gray-200"
-                                }`}
+                              className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${
+                                phase.state === "done" ? "bg-green-300" : "bg-gray-200"
+                              }`}
                             />
                           )}
 
+                          {/* Indikator urutan */}
                           <div
                             className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
                           >
-                            {currentStep.icon}
+                            <span className="text-sm font-black">{phase.index}</span>
                           </div>
 
-                          <div className="mt-3 px-1 text-center max-w-[130px] mx-auto">
-                            <p
-                              className={`mb-0.5 text-[11px] font-bold ${currentStep.text}`}
-                            >
+                          <div className="mt-3 px-1 text-center max-w-[140px] mx-auto">
+                            {/* Status badge */}
+                            <p className={`mb-1 text-[10px] font-bold uppercase tracking-wider ${currentStep.text}`}>
                               {currentStep.label}
+                              {phase.isRecommendation && " · AI"}
                             </p>
 
+                            {/* Deskripsi kursus */}
                             <p
-                              className="whitespace-normal text-xs font-semibold leading-snug text-gray-700 line-clamp-3"
-                              title={phase.title}
+                              className="whitespace-normal text-[11px] font-semibold leading-snug text-gray-700 line-clamp-4"
+                              title={`Mengikuti kursus "${phase.courseName}" yang mempelajari skill "${phase.skillsText}"`}
                             >
-                              {phase.title}
+                              Mengikuti kursus{" "}
+                              <span className="text-[#025CB8]">&quot;{phase.courseName}&quot;</span>{" "}
+                              mempelajari{" "}
+                              <span className="text-gray-500 italic">{phase.skillsText}</span>
                             </p>
 
-                            <p className="mt-1 text-[10px] text-gray-400">
-                              {phase.estimate}
+                            {/* Durasi */}
+                            <p className="mt-1.5 flex items-center justify-center gap-1 text-[10px] text-gray-400">
+                              <Clock size={9} />
+                              ± 1 bulan
                             </p>
-
-                            {phase.state === "active" &&
-                              phase.progress && (
-                                <div className="mt-2 w-full px-2">
-                                  <MiniBar
-                                    value={phase.progress}
-                                  />
-
-                                  <p className="mt-1 text-[10px] font-semibold text-[#025CB8]">
-                                    {phase.progress}% selesai
-                                  </p>
-                                </div>
-                              )}
                           </div>
                         </div>
                       );
@@ -851,76 +901,65 @@ const Dashboard = () => {
               </div>
 
               {/* mobile / tablet */}
-              <div className="flex flex-col gap-4 lg:hidden">
-                {learningJourney.length === 0 ? (
+              <div className="flex flex-col gap-3 lg:hidden">
+                {loadingRecs ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Loader2 size={24} className="text-[#025CB8] animate-spin mb-2" />
+                    <p className="text-xs text-gray-400">Memuat roadmap...</p>
+                  </div>
+                ) : learningJourney.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <BookOpen size={28} className="text-gray-200 mb-2" />
                     <p className="text-xs font-bold text-gray-400">Roadmap belum terbentuk</p>
                     <button
-                      onClick={() => navigate("/auth/user-analisis-skill")}
+                      onClick={() => navigate("/auth/roadmap-karir")}
                       className="mt-3 px-3 py-1.5 rounded-lg text-[11px] font-bold text-[#025CB8] border border-blue-200 hover:bg-blue-50 transition"
                     >
-                      Mulai Analisis CV →
+                      Jelajahi Kursus →
                     </button>
                   </div>
                 ) : (
                   <>
                     {learningJourney.map((phase, index) => {
-                      const currentStep =
-                        roadmapState[
-                        phase.state as keyof typeof roadmapState
-                        ];
-
-                      const lastIndex =
-                        index === learningJourney.length - 1;
+                      const currentStep = roadmapState[phase.state as keyof typeof roadmapState];
+                      const lastIndex = index === learningJourney.length - 1;
 
                       return (
-                        <div
-                          key={phase.id}
-                          className="relative flex items-start gap-3"
-                        >
+                        <div key={phase.id} className="relative flex items-start gap-3">
                           {!lastIndex && (
                             <div
-                              className={`absolute bottom-[-16px] left-[19px] top-10 w-0.5 ${phase.state === "done"
-                                ? "bg-green-200"
-                                : "bg-gray-200"
-                                }`}
+                              className={`absolute bottom-[-12px] left-[19px] top-10 w-0.5 ${
+                                phase.state === "done" ? "bg-green-200" : "bg-gray-200"
+                              }`}
                             />
                           )}
 
+                          {/* Indikator urutan */}
                           <div
                             className={`z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${currentStep.ring} ${currentStep.text}`}
                           >
-                            {currentStep.icon}
+                            <span className="text-sm font-black">{phase.index}</span>
                           </div>
 
                           <div className="flex-1 pb-2">
-                            <span
-                              className={`text-[11px] font-bold ${currentStep.text}`}
-                            >
-                              {currentStep.label}
+                            {/* Status */}
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${currentStep.text}`}>
+                              {currentStep.label}{phase.isRecommendation && " · AI"}
                             </span>
 
-                            <p className="whitespace-pre-line text-sm font-semibold leading-snug text-gray-700">
-                              {phase.title}
+                            {/* Deskripsi */}
+                            <p className="text-xs font-semibold leading-snug text-gray-700 mt-0.5">
+                              Mengikuti kursus{" "}
+                              <span className="text-[#025CB8]">&quot;{phase.courseName}&quot;</span>{" "}
+                              mempelajari{" "}
+                              <span className="text-gray-500 italic">{phase.skillsText}</span>
                             </p>
 
-                            <p className="text-xs text-gray-400">
-                              {phase.estimate}
+                            {/* Durasi */}
+                            <p className="mt-1 flex items-center gap-1 text-[10px] text-gray-400">
+                              <Clock size={9} />
+                              ± 1 bulan
                             </p>
-
-                            {phase.state === "active" &&
-                              phase.progress && (
-                                <div className="mt-2">
-                                  <MiniBar
-                                    value={phase.progress}
-                                  />
-
-                                  <p className="mt-1 text-xs font-semibold text-[#025CB8]">
-                                    {phase.progress}% selesai
-                                  </p>
-                                </div>
-                              )}
                           </div>
                         </div>
                       );

@@ -318,71 +318,77 @@ const SkillPicker = ({
 
 // overlay loading
 const CvLoadingOverlay = ({
+  uploadProgress,
+  apiCompleted,
   onFinish,
 }: {
+  uploadProgress: number;
+  apiCompleted: boolean;
   onFinish: () => void;
 }) => {
-  const [currentStep, setCurrentStep] =
-    useState(0);
-
-  const [loadingPercent, setLoadingPercent] =
-    useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loadingPercent, setLoadingPercent] = useState(0);
 
   useEffect(() => {
-    const totalDuration = loadingFlow.reduce(
-      (sum, flowItem) => sum + flowItem.duration,
-      0
-    );
+    let active = true;
+    let step = 0;
+    let currentPct = 0;
 
-    const startTimestamp = Date.now();
+    let step1Timer = 0;
+    const step1Duration = 800; // 800ms for reading CV
 
-    const progressTimer = setInterval(() => {
-      const elapsedTime =
-        Date.now() - startTimestamp;
+    const interval = setInterval(() => {
+      if (!active) return;
 
-      const percent = Math.min(
-        Math.round(
-          (elapsedTime / totalDuration) * 100
-        ),
-        98
-      );
+      let targetPct = 0;
 
-      setLoadingPercent(percent);
-    }, 60);
+      if (uploadProgress < 100) {
+        // Step 0: Uploading
+        step = 0;
+        targetPct = Math.round(uploadProgress * 0.25); // 0% to 25%
+      } else if (!apiCompleted) {
+        // Upload complete, waiting/processing API
+        if (step1Timer < step1Duration) {
+          // Step 1: Reading CV (mock animation)
+          step = 1;
+          step1Timer += 30;
+          const ratio = step1Timer / step1Duration;
+          targetPct = 25 + Math.round(ratio * 25); // 25% to 50%
+        } else {
+          // Step 2: Detecting skills (AI processing)
+          step = 2;
+          targetPct = 70; // holds at 70% during API call
+        }
+      } else {
+        // API Completed
+        // Step 3: Validating CV data
+        step = 3;
+        targetPct = 100;
+      }
 
-    let accumulatedDuration = 0;
+      setCurrentStep(step);
 
-    const queuedTimers: ReturnType<
-      typeof setTimeout
-    >[] = [];
+      // Smoothly interpolate loadingPercent towards targetPct
+      if (currentPct < targetPct) {
+        const stepSize = step === 3 ? 3 : 1.5;
+        currentPct = Math.min(currentPct + stepSize, targetPct);
+        setLoadingPercent(Math.round(currentPct));
+      }
 
-    loadingFlow.forEach((_, idx) => {
-      if (idx === 0) return;
-
-      accumulatedDuration +=
-        loadingFlow[idx - 1].duration;
-
-      queuedTimers.push(
+      // Check for finish completion
+      if (apiCompleted && currentPct >= 100) {
+        clearInterval(interval);
         setTimeout(() => {
-          setCurrentStep(idx);
-        }, accumulatedDuration)
-      );
-    });
-
-    const finalTimer = setTimeout(() => {
-      clearInterval(progressTimer);
-
-      setLoadingPercent(99); // Berhenti di 99% sampai state diganti oleh startAnalysis
-    }, totalDuration);
+          if (active) onFinish();
+        }, 300);
+      }
+    }, 30);
 
     return () => {
-      clearInterval(progressTimer);
-
-      clearTimeout(finalTimer);
-
-      queuedTimers.forEach(clearTimeout);
+      active = false;
+      clearInterval(interval);
     };
-  }, [onFinish]);
+  }, [uploadProgress, apiCompleted, onFinish]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
@@ -512,6 +518,9 @@ const AnalisisSkill = () => {
   const [selectedSkillTags, setSelectedSkillTags] =
     useState<string[]>([]);
 
+  const [apiCompleted, setApiCompleted] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const availableSkills = useMemo(() => {
     if (preferredIndustries.length === 0) {
       // Fallback: gabungan seluruh skill
@@ -609,15 +618,20 @@ const AnalisisSkill = () => {
     if (!cvFile || !careerTarget) return;
 
     setAnalysisState("processing");
+    setApiCompleted(false);
     setUploadError(null);
+    setUploadProgress(0);
 
     try {
-      const response = await analyzeCvService(cvFile, careerTarget);
+      const response = await analyzeCvService(cvFile, careerTarget, (progressEvent) => {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total) || 0;
+        setUploadProgress(percent);
+      });
       const { profile } = response.data;
       setCareerLevel((profile.experienceLevel as CareerLevel) || "fresh");
       setSelectedSkillTags(profile.skills || []);
       
-      setAnalysisState("success");
+      setApiCompleted(true);
     } catch (error: any) {
       console.error("Analysis error:", error);
       setAnalysisState("cv_not_found");
@@ -657,15 +671,30 @@ const AnalisisSkill = () => {
     }
   };
 
-  const isAnalyzeReady = useMemo(
-    () => Boolean(cvFile),
-    [cvFile]
-  );
+  const isFormFilled = useMemo(() => {
+    return Boolean(
+      careerLevel !== "" ||
+      preferredIndustries.length > 0 ||
+      selectedSkillTags.length > 0 ||
+      manualSkills.trim() !== ""
+    );
+  }, [careerLevel, preferredIndustries, selectedSkillTags, manualSkills]);
+
+  const shouldSaveManual = useMemo(() => {
+    return (
+      analysisState === "cv_not_found" ||
+      (showManualForm && (cvFile === null || isFormFilled))
+    );
+  }, [analysisState, showManualForm, cvFile, isFormFilled]);
 
   return (
     <>
       {analysisState === "processing" && (
-        <CvLoadingOverlay onFinish={() => {}} />
+        <CvLoadingOverlay
+          uploadProgress={uploadProgress}
+          apiCompleted={apiCompleted}
+          onFinish={() => setAnalysisState("success")}
+        />
       )}
 
       <div className="min-h-screen bg-[#F7F9FC]">
@@ -1054,53 +1083,46 @@ const AnalisisSkill = () => {
                     </div>
                   )}
 
-                  {/* Tombol Simpan Data Analisis — hanya tampil saat cv_not_found */}
-                  {analysisState === "cv_not_found" && (
-                    <button
-                      type="button"
-                      onClick={saveManualData}
-                      disabled={isSaving || !careerTarget.trim()}
-                      className={`w-full mt-4 py-3.5 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 transition-all duration-300
-                        ${isSaving || !careerTarget.trim()
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:scale-[1.01]"
-                        }`}
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #059669, #047857)",
-                      }}
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          Menyimpan...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 size={16} />
-                          Simpan Data Analisis
-                        </>
-                      )}
-                    </button>
-                  )}
-
                 <button
                   type="button"
-                  onClick={startAnalysis}
-                  disabled={!isAnalyzeReady}
+                  onClick={shouldSaveManual ? saveManualData : startAnalysis}
+                  disabled={
+                    shouldSaveManual
+                      ? isSaving || !careerTarget.trim()
+                      : !cvFile || !careerTarget.trim()
+                  }
                   className={`w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-all duration-300
-                    ${isAnalyzeReady
-                      ? "hover:scale-[1.01]"
-                      : "opacity-50 cursor-not-allowed"
+                    ${
+                      (shouldSaveManual
+                        ? isSaving || !careerTarget.trim()
+                        : !cvFile || !careerTarget.trim())
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:scale-[1.01]"
                     }`}
                   style={{
                     background:
                       "linear-gradient(135deg, #025CB8, #000000)",
                   }}
                 >
-                  <Sparkles size={18} />
-                  Analisis CV Sekarang
-                  <ArrowRight size={18} />
+                  {shouldSaveManual ? (
+                    isSaving ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={18} />
+                        Simpan Data Analisis
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <Sparkles size={18} />
+                      Analisis CV Sekarang
+                      <ArrowRight size={18} />
+                    </>
+                  )}
                 </button>
               </div>
               )}

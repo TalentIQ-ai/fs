@@ -64,7 +64,8 @@ export const updateStatsService = async (
 // POST /api/ai/analyze-cv — kirim PDF CV untuk diekstrak AI
 export const analyzeCvService = async (
   file: File,
-  targetRole: string
+  targetRole: string,
+  onUploadProgress?: (progressEvent: any) => void
 ): Promise<{ message: string; data: { extractedTextPreview: string, profile: { skills: string[], targetRole: string, experienceLevel: string } } }> => {
   const formData = new FormData();
   formData.append("cvFile", file);
@@ -75,5 +76,6 @@ export const analyzeCvService = async (
     headers: {
       "Content-Type": "multipart/form-data",
     },
+    onUploadProgress,
   });
 };

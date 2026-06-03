@@ -24,6 +24,7 @@ export interface UserCourse {
   progress: number;
   status: "active" | "completed";
   lastAccessed: string;
+  skills: string[];
   recentCheckins: Array<{
     id: number;
     date: string;

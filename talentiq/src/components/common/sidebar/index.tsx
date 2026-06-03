@@ -40,7 +40,7 @@ const navItems: NavItem[] = [
     icon: <LayoutDashboard size={20} />,
   },
   {
-    label: "Roadmap Karir",
+    label: "Roadmap Karir & Kursus",
     path: "/auth/roadmap-karir",
     icon: <Map size={20} />,
   },
@@ -55,9 +55,9 @@ const navItems: NavItem[] = [
     icon: <Briefcase size={20} />,
   },
   {
-    label: "Profil & Kursus",
+    label: "Profil",
     path: "/profil",
-    icon: <BookOpen size={20} />,
+    icon: <User size={20} />,
   },
 ];
 

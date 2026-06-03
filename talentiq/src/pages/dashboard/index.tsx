@@ -304,17 +304,34 @@ const Dashboard = () => {
     skillsText: string;
     state: "active" | "next" | "done" | "later";
     isRecommendation?: boolean;
+    url?: string;
   }
 
   const learningJourney = useMemo((): RoadmapItem[] => {
     const MAX_ITEMS = 5;
 
+    const getLevelWeight = (lvl?: string | null) => {
+      if (!lvl) return 1;
+      const key = lvl.toLowerCase().trim();
+      if (key.includes("begin") || key.includes("pemula") || key.includes("dasar") || key.includes("basic") || key.includes("start")) return 1;
+      if (key.includes("inter") || key.includes("menengah") || key.includes("medium")) return 2;
+      if (key.includes("adv") || key.includes("mahir") || key.includes("lanjut") || key.includes("expert") || key.includes("specialist")) return 3;
+      return 1;
+    };
+
     // ── Kondisi A: user sudah punya kursus ────────────────────────────────
     if (myCoursesList.length > 0) {
-      // Urutkan: active dulu, lalu completed
+      // Urutkan berdasarkan level kursus dari yang terendah ke tertinggi
       const sorted = [...myCoursesList].sort((a, b) => {
+        const wA = getLevelWeight(a.level);
+        const wB = getLevelWeight(b.level);
+        if (wA !== wB) return wA - wB;
+
+        // Sub-sort: active dulu, baru completed
         if (a.status === "active" && b.status !== "active") return -1;
         if (a.status !== "active" && b.status === "active") return 1;
+
+        // Sub-sort: lastAccessed terbaru di depan
         return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
       });
 
@@ -325,8 +342,7 @@ const Dashboard = () => {
 
         let state: RoadmapItem["state"] = "next";
         if (uc.status === "completed") state = "done";
-        else if (uc.status === "active" && idx === 0) state = "active";
-        else if (uc.status === "active") state = "next";
+        else if (uc.status === "active") state = "active";
 
         return {
           id: uc.id,
@@ -335,13 +351,21 @@ const Dashboard = () => {
           skillsText,
           state,
           isRecommendation: false,
+          url: uc.url || undefined,
         };
       });
     }
 
     // ── Kondisi B: fallback ke rekomendasi LLM ────────────────────────────
     if (llmRecs.length > 0) {
-      return llmRecs.slice(0, MAX_ITEMS).map((rec: any, idx) => {
+      // Urutkan berdasarkan level kursus rekomendasi dari yang terendah ke tertinggi
+      const sortedRecs = [...llmRecs].sort((a, b) => {
+        const lvlA = a.course?.level || "";
+        const lvlB = b.course?.level || "";
+        return getLevelWeight(lvlA) - getLevelWeight(lvlB);
+      });
+
+      return sortedRecs.slice(0, MAX_ITEMS).map((rec: any, idx) => {
         const courseName = rec.course?.course_name || "Kursus Rekomendasi";
         const taught = rec.course?.skills_taught
           ? rec.course.skills_taught.split(",").map((s: string) => s.trim()).filter(Boolean)
@@ -357,6 +381,7 @@ const Dashboard = () => {
           skillsText,
           state: idx === 0 ? "active" : "next",
           isRecommendation: true,
+          url: rec.course?.url || undefined,
         };
       });
     }
@@ -856,9 +881,8 @@ const Dashboard = () => {
                         >
                           {!lastIndex && (
                             <div
-                              className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${
-                                phase.state === "done" ? "bg-green-300" : "bg-gray-200"
-                              }`}
+                              className={`absolute left-1/2 top-[19px] z-0 h-0.5 w-full ${phase.state === "done" ? "bg-green-300" : "bg-gray-200"
+                                }`}
                             />
                           )}
 
@@ -869,7 +893,7 @@ const Dashboard = () => {
                             <span className="text-sm font-black">{phase.index}</span>
                           </div>
 
-                          <div className="mt-3 px-1 text-center max-w-[140px] mx-auto">
+                          <div className="mt-3 px-1 text-center max-w-[140px] mx-auto flex flex-col items-center">
                             {/* Status badge */}
                             <p className={`mb-1 text-[10px] font-bold uppercase tracking-wider ${currentStep.text}`}>
                               {currentStep.label}
@@ -882,7 +906,18 @@ const Dashboard = () => {
                               title={`Mengikuti kursus "${phase.courseName}" yang mempelajari skill "${phase.skillsText}"`}
                             >
                               Mengikuti kursus{" "}
-                              <span className="text-[#025CB8]">&quot;{phase.courseName}&quot;</span>{" "}
+                              {phase.url ? (
+                                <a
+                                  href={phase.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[#025CB8] hover:underline transition-colors font-bold"
+                                >
+                                  &quot;{phase.courseName}&quot;
+                                </a>
+                              ) : (
+                                <span className="text-[#025CB8] font-bold">&quot;{phase.courseName}&quot;</span>
+                              )}{" "}
                               mempelajari{" "}
                               <span className="text-gray-500 italic">{phase.skillsText}</span>
                             </p>
@@ -928,9 +963,8 @@ const Dashboard = () => {
                         <div key={phase.id} className="relative flex items-start gap-3">
                           {!lastIndex && (
                             <div
-                              className={`absolute bottom-[-12px] left-[19px] top-10 w-0.5 ${
-                                phase.state === "done" ? "bg-green-200" : "bg-gray-200"
-                              }`}
+                              className={`absolute bottom-[-12px] left-[19px] top-10 w-0.5 ${phase.state === "done" ? "bg-green-200" : "bg-gray-200"
+                                }`}
                             />
                           )}
 
@@ -950,7 +984,18 @@ const Dashboard = () => {
                             {/* Deskripsi */}
                             <p className="text-xs font-semibold leading-snug text-gray-700 mt-0.5">
                               Mengikuti kursus{" "}
-                              <span className="text-[#025CB8]">&quot;{phase.courseName}&quot;</span>{" "}
+                              {phase.url ? (
+                                <a
+                                  href={phase.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[#025CB8] hover:underline transition-colors font-bold"
+                                >
+                                  &quot;{phase.courseName}&quot;
+                                </a>
+                              ) : (
+                                <span className="text-[#025CB8] font-bold">&quot;{phase.courseName}&quot;</span>
+                              )}{" "}
                               mempelajari{" "}
                               <span className="text-gray-500 italic">{phase.skillsText}</span>
                             </p>
@@ -1080,6 +1125,7 @@ const Dashboard = () => {
                         </div>
 
                         <button
+                          onClick={() => navigate("/auth/roadmap-karir")}
                           className="w-full rounded-xl py-2.5 text-xs font-bold text-white transition-all duration-200 hover:opacity-90 hover:shadow-md active:scale-95"
                           style={{
                             background: skillCard.accent,
@@ -1118,7 +1164,7 @@ const Dashboard = () => {
                 </div>
 
                 <button
-                  onClick={() => navigate("/profil")}
+                  onClick={() => navigate("/auth/roadmap-karir")}
                   className="group hidden items-center gap-1 text-sm font-semibold text-[#025CB8] transition hover:text-blue-700 sm:flex"
                 >
                   Lihat semua
@@ -1220,22 +1266,14 @@ const Dashboard = () => {
                           </div>
 
                           <button
-                            disabled={enrollingId === course.id}
-                            onClick={() => handleEnroll(course.id)}
+                            onClick={() => navigate("/auth/roadmap-karir")}
                             style={{
                               background:
                                 "linear-gradient(135deg, #025CB8, #62AAEA)",
                             }}
-                            className="w-full mt-4 py-2.5 rounded-xl text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                            className="w-full mt-4 py-2.5 rounded-xl text-xs font-bold text-white transition hover:opacity-90 flex items-center justify-center gap-2 shadow-sm hover:shadow"
                           >
-                            {enrollingId === course.id ? (
-                              <>
-                                <Loader2 size={12} className="animate-spin" />
-                                Mendaftar...
-                              </>
-                            ) : (
-                              "Mulai Belajar →"
-                            )}
+                            Mulai Belajar →
                           </button>
                         </div>
                       </div>

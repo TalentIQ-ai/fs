@@ -81,6 +81,8 @@ const RoadmapKarir = () => {
   const navigate = useNavigate();
   const [sidebarMini, setSidebarMini] = useState(false);
   const [currentTab, setCurrentTab] = useState<"roadmap" | "kursus">("roadmap");
+  const [roadmapMode, setRoadmapMode] = useState<"ai" | "mandiri">("ai");
+  const [allRecommendations, setAllRecommendations] = useState<any[]>([]);
 
   // ── Dashboard data ─────────────────────────────────────────────────────────
   const [dashboardData, setDashboardData] = useState<DashboardSummary | null>(null);
@@ -162,30 +164,28 @@ const RoadmapKarir = () => {
       setLoadingRecs(true);
       const recsRes = await getRecommendationsService().catch(() => null);
       if (recsRes) {
-        const mapped = (recsRes.recommendations || [])
-          .filter((r: any) => {
-            const cId = r.course?.id || r.courseId;
-            return !enrolledCourseIds.has(cId);
-          })
-          .map((rec: any) => {
-            const matched = rec.matchedSkills || [];
-            const taught = rec.course?.skills_taught
-              ? rec.course.skills_taught.split(",").map((s: string) => s.trim())
-              : [];
-            const uniqueSkills = Array.from(new Set([...matched, ...taught])).filter(Boolean);
-            return {
-              id: rec.course?.id || rec.courseId,
-              title: rec.course?.course_name || "Kursus Rekomendasi",
-              platform: rec.course?.platform || "Online",
-              category: rec.course?.category || "General",
-              badge: "Direkomendasikan AI",
-              reason: rec.reason || "",
-              level: rec.course?.level || "Beginner",
-              skills: uniqueSkills,
-              url: rec.course?.url,
-            };
-          });
-        setRecommendedCourseList(mapped);
+        const mappedAll = (recsRes.recommendations || []).map((rec: any) => {
+          const matched = rec.matchedSkills || [];
+          const taught = rec.course?.skills_taught
+            ? rec.course.skills_taught.split(",").map((s: string) => s.trim())
+            : [];
+          const uniqueSkills = Array.from(new Set([...matched, ...taught])).filter(Boolean);
+          return {
+            id: rec.course?.id || rec.courseId,
+            title: rec.course?.course_name || "Kursus Rekomendasi",
+            platform: rec.course?.platform || "Online",
+            category: rec.course?.category || "General",
+            badge: "Direkomendasikan AI",
+            reason: rec.reason || "",
+            level: rec.course?.level || "Beginner",
+            skills: uniqueSkills,
+            url: rec.course?.url,
+          };
+        });
+        setAllRecommendations(mappedAll);
+
+        const filtered = mappedAll.filter((r) => !enrolledCourseIds.has(r.id));
+        setRecommendedCourseList(filtered);
       }
     } catch (err) {
       console.error("[Roadmap] Error fetching recommendations:", err);
@@ -221,16 +221,49 @@ const RoadmapKarir = () => {
     [myCoursesList]
   );
 
-  // Sorted: active dulu (terbaru), lalu completed (terbaru)
+  const getLevelWeight = (lvl?: string | null) => {
+    if (!lvl) return 1;
+    const key = lvl.toLowerCase().trim();
+    if (key.includes("begin") || key.includes("pemula") || key.includes("dasar") || key.includes("basic") || key.includes("start")) return 1;
+    if (key.includes("inter") || key.includes("menengah") || key.includes("medium")) return 2;
+    if (key.includes("adv") || key.includes("mahir") || key.includes("lanjut") || key.includes("expert") || key.includes("specialist")) return 3;
+    return 1;
+  };
+
+  // Sorted: level terendah ke tertinggi (Beginner -> Intermediate -> Advanced)
   const sortedCourseList = useMemo(() => {
-    const active = activeCourseList.slice().sort(
-      (a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
-    );
-    const completed = completedCourseList.slice().sort(
-      (a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()
-    );
-    return [...active, ...completed];
-  }, [activeCourseList, completedCourseList]);
+    return [...myCoursesList].sort((a, b) => {
+      const wA = getLevelWeight(a.level);
+      const wB = getLevelWeight(b.level);
+      if (wA !== wB) return wA - wB;
+
+      // Sub-sort: active dulu, baru completed
+      if (a.status === "active" && b.status !== "active") return -1;
+      if (a.status !== "active" && b.status === "active") return 1;
+
+      // Sub-sort: lastAccessed terbaru di depan
+      return new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime();
+    });
+  }, [myCoursesList]);
+
+  // AI Roadmap sorted by level (AI mode)
+  const sortedAiRoadmapList = useMemo(() => {
+    return [...allRecommendations].sort((a, b) => {
+      const wA = getLevelWeight(a.level);
+      const wB = getLevelWeight(b.level);
+      return wA - wB;
+    });
+  }, [allRecommendations]);
+
+  const matchedAiRoadmap = useMemo(() => {
+    return sortedAiRoadmapList.map((rec) => {
+      const enrollment = myCoursesList.find((uc) => uc.courseId === rec.id);
+      return {
+        ...rec,
+        enrollment,
+      };
+    });
+  }, [sortedAiRoadmapList, myCoursesList]);
 
   // ── Skill radar ────────────────────────────────────────────────────────────
   const skillRadar = useMemo(() => {
@@ -517,16 +550,70 @@ const RoadmapKarir = () => {
 
             {/* ── Rencana Pengembangan + Sidebar ─────────────────────────── */}
             <div className="flex flex-col lg:flex-row gap-6">
-              {/* Rencana Pengembangan — dari myCoursesList */}
+              {/* Rencana Pengembangan — dari myCoursesList / allRecommendations */}
               <div className="flex-1 bg-white border border-gray-100 rounded-2xl shadow-sm p-6 sm:p-8">
-                <h2 className="flex items-center gap-2 text-base font-bold text-gray-800 mb-6">
-                  <BookOpen size={18} className="text-[#025CB8]" />
-                  Rencana Pengembangan Kursus
-                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <h2 className="flex items-center gap-2 text-base font-bold text-gray-800">
+                    <BookOpen size={18} className="text-[#025CB8]" />
+                    {roadmapMode === "ai" ? "Roadmap Karir (Rekomendasi AI)" : "Roadmap Belajar Mandiri"}
+                  </h2>
+
+                  {/* Toggle Switch */}
+                  <div className="flex rounded-xl bg-gray-100 p-1 self-start sm:self-auto shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setRoadmapMode("ai")}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
+                        roadmapMode === "ai"
+                          ? "bg-white text-[#025CB8] shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      🤖 Rekomendasi AI
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRoadmapMode("mandiri")}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
+                        roadmapMode === "mandiri"
+                          ? "bg-white text-[#025CB8] shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      👤 Mandiri (Pilih Sendiri)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Enroll alert di Roadmap */}
+                {enrollMessage && (
+                  <div
+                    className={`mb-4 flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm font-medium shadow-sm ${
+                      enrollMessage.type === "success"
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-red-200 bg-red-50 text-red-700"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      {enrollMessage.type === "success" ? (
+                        <CheckCircle2 size={16} />
+                      ) : (
+                        <X size={16} />
+                      )}
+                      {enrollMessage.text}
+                    </span>
+                    <button
+                      onClick={() => setEnrollMessage(null)}
+                      className="shrink-0 hover:opacity-70"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
 
                 <div className="relative pl-3 sm:pl-4">
                   {/* Loading */}
-                  {loadingCourses ? (
+                  {loadingCourses || (roadmapMode === "ai" && loadingRecs) ? (
                     <div className="space-y-6">
                       {[1, 2, 3].map((n) => (
                         <div key={n} className="flex gap-4 animate-pulse">
@@ -539,258 +626,449 @@ const RoadmapKarir = () => {
                         </div>
                       ))}
                     </div>
-                  ) : myCoursesList.length === 0 ? (
-                    /* Empty state */
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-                        style={{ background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)" }}
-                      >
-                        <BookOpen size={28} className="text-[#025CB8] opacity-50" />
-                      </div>
-                      <p className="text-sm font-bold text-gray-500 mb-1">
-                        Belum ada kursus yang diikuti
-                      </p>
-                      <p className="text-xs text-gray-400 leading-relaxed mb-5 max-w-xs">
-                        Daftar ke kursus rekomendasi untuk memulai perjalanan belajarmu
-                        dan mengisi rencana pengembangan ini.
-                      </p>
-                      <button
-                        onClick={() => setCurrentTab("kursus")}
-                        className="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90"
-                        style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
-                      >
-                        Lihat Kursus Rekomendasi →
-                      </button>
-                    </div>
                   ) : (
-                    /* Timeline kursus yang diikuti */
                     <>
-                      <div className="space-y-6 relative z-10">
-                        {sortedCourseList.map((course, idx) => {
-                          const isActive = course.status === "active";
-                          const isDone = course.status === "completed";
+                      {roadmapMode === "ai" ? (
+                        matchedAiRoadmap.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div
+                              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                              style={{ background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)" }}
+                            >
+                              <BrainCircuit size={28} className="text-[#025CB8] opacity-50 animate-pulse" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 mb-1">
+                              Roadmap AI belum terbentuk
+                            </p>
+                            <p className="text-xs text-gray-400 leading-relaxed mb-5 max-w-xs">
+                              Unggah CV kamu atau isi analisis skill untuk membuat roadmap otomatis dari AI.
+                            </p>
+                            <button
+                              onClick={() => navigate("/auth/user-analisis-skill")}
+                              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90"
+                              style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                            >
+                              Mulai Analisis Skill &amp; CV →
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-6 relative z-10">
+                            {matchedAiRoadmap.map((item, idx) => {
+                              const course = item.enrollment;
+                              const isEnrolled = !!course;
+                              const isActive = isEnrolled && course.status === "active";
+                              const isDone = isEnrolled && course.status === "completed";
+                              const courseUrl = course?.url || item.url;
 
-                          const hasCheckedInToday = course.recentCheckins?.some(
-                            (ci) =>
-                              new Date(ci.date).toDateString() ===
-                              new Date().toDateString()
-                          );
+                              const hasCheckedInToday = isEnrolled && course.recentCheckins?.some(
+                                (ci: any) => new Date(ci.date).toDateString() === new Date().toDateString()
+                              );
 
-                          const badgeClass = isDone
-                            ? "bg-green-100 text-green-700"
-                            : "bg-blue-100 text-[#025CB8]";
+                              const badgeClass = isDone
+                                ? "bg-green-100 text-green-700"
+                                : isActive
+                                ? "bg-blue-100 text-[#025CB8]"
+                                : "bg-purple-100 text-purple-700";
 
-                          const cardClass = isActive
-                            ? "border-blue-200 bg-blue-50/20"
-                            : isDone
-                            ? "border-green-200 bg-green-50/10"
-                            : "border-gray-100 bg-white";
+                              const cardClass = isActive
+                                ? "border-blue-200 bg-blue-50/20"
+                                : isDone
+                                ? "border-green-200 bg-green-50/10"
+                                : "border-dashed border-gray-200 bg-white hover:border-blue-300";
 
-                          const totalHoursSpent =
-                            course.recentCheckins?.reduce(
-                              (sum, ci) =>
-                                sum + (parseFloat(String(ci.hoursSpent)) || 0),
-                              0
-                            ) || 0;
+                              const totalHoursSpent = isEnrolled
+                                ? (course.recentCheckins?.reduce(
+                                    (sum: number, ci: any) => sum + (parseFloat(String(ci.hoursSpent)) || 0),
+                                    0
+                                  ) || 0)
+                                : 0;
 
-                          const accent = courseAccents[idx % courseAccents.length];
+                              const accent = courseAccents[idx % courseAccents.length];
 
-                          return (
-                            <div key={course.id} className="relative flex gap-4 sm:gap-5 items-stretch">
-                              {/* Timeline circle wrapper */}
-                              <div className="relative w-9 sm:w-10 flex-shrink-0 flex flex-col items-center z-10">
-                                {/* Segment Line */}
-                                {idx === 0 ? (
-                                  <div className="absolute top-[18px] sm:top-[20px] bottom-[-24px] w-[2px] bg-gray-100 -z-10" />
-                                ) : (
-                                  <div className="absolute top-0 bottom-[-24px] w-[2px] bg-gray-100 -z-10" />
-                                )}
-                                <div
-                                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-sm text-white flex-shrink-0 ${
-                                    isDone
-                                      ? "bg-green-500"
-                                      : "bg-[#025CB8] ring-4 ring-blue-100"
-                                  }`}
-                                >
-                                  {isDone ? (
-                                    <CheckCircle2 size={18} />
-                                  ) : (
-                                    <span className="text-sm font-black">{idx + 1}</span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Card */}
-                              <div
-                                className={`flex-1 border rounded-2xl p-4 sm:p-5 hover:shadow-md transition-shadow ${cardClass}`}
-                              >
-                                {/* Header baris 1 */}
-                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                                      <span
-                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}
-                                      >
-                                        {isDone ? "✓ Selesai" : "Sedang Berjalan"}
-                                      </span>
-                                      {isActive && hasCheckedInToday && (
-                                        <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-md">
-                                          Check-in Hari Ini ✓
-                                        </span>
-                                      )}
-                                    </div>
-                                    <h3
-                                      className="font-bold text-sm text-gray-800 leading-snug line-clamp-2"
-                                      title={course.courseName}
-                                    >
-                                      {course.url ? (
-                                        <a
-                                          href={course.url}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="hover:text-[#025CB8] hover:underline transition-colors"
-                                        >
-                                          {course.courseName}
-                                        </a>
-                                      ) : (
-                                        course.courseName
-                                      )}
-                                    </h3>
-                                  </div>
-
-                                  {/* Platform + level */}
-                                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                                    <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
-                                      {course.platform}
-                                    </span>
-                                    {course.level && (
-                                      <span className="text-[9px] font-bold text-[#025CB8] bg-blue-50 border border-blue-100 px-1.5 py-1 rounded-md uppercase tracking-wider">
-                                        {course.level}
-                                      </span>
+                              return (
+                                <div key={item.id} className="relative flex gap-4 sm:gap-5 items-stretch">
+                                  <div className="relative w-9 sm:w-10 flex-shrink-0 flex flex-col items-center z-10">
+                                    {idx === 0 ? (
+                                      <div className="absolute top-[18px] sm:top-[20px] bottom-[-24px] w-[2px] bg-gray-100 -z-10" />
+                                    ) : (
+                                      <div className="absolute top-0 bottom-[-24px] w-[2px] bg-gray-100 -z-10" />
                                     )}
-                                  </div>
-                                </div>
-
-                                {/* Skills */}
-                                {course.skills && course.skills.length > 0 && (
-                                  <div className="mb-3 flex flex-wrap gap-1.5">
-                                    {course.skills.slice(0, 3).map((skill) => (
-                                      <span
-                                        key={skill}
-                                        className="bg-gray-100 text-gray-600 border border-gray-200/50 rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
-                                      >
-                                        {skill}
-                                      </span>
-                                    ))}
-                                    {course.skills.length > 3 && (
-                                      <span className="bg-gray-50 text-gray-400 border border-gray-200/30 rounded-lg px-2 py-0.5 text-[9px] font-bold">
-                                        +{course.skills.length - 3} lagi
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Progress bar (aktif) */}
-                                {isActive && (
-                                  <div className="mb-3">
-                                    <div className="flex justify-between text-xs font-bold mb-1.5">
-                                      <span className="text-gray-500">Progress Belajar</span>
-                                      <span style={{ color: accent }}>
-                                        {course.progress}%
-                                      </span>
-                                    </div>
-                                    <ProgressLine
-                                      percentage={course.progress}
-                                      accent={accent}
-                                    />
-                                    <p className="mt-1 flex items-center gap-1 text-[10px] text-gray-400">
-                                      <Clock size={9} />
-                                      {hasCheckedInToday
-                                        ? `Check-in hari ini · ${course.progress}% selesai`
-                                        : `Progress terkini · ${course.progress}% selesai`}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Selesai info */}
-                                {isDone && (
-                                  <div className="mb-3 flex items-center gap-2 bg-green-50 rounded-xl p-2.5 text-xs font-semibold text-green-700">
-                                    <Trophy size={14} />
-                                    <span>
-                                      🎉 Selesai dalam{" "}
-                                      {Number(totalHoursSpent.toFixed(1))} jam belajar
-                                    </span>
-                                  </div>
-                                )}
-
-                                {/* Action buttons — hanya kursus aktif */}
-                                {isActive && (
-                                  <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 mt-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenCompleteModal(course)}
-                                      className="px-3 py-2 text-xs font-bold text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 rounded-xl transition-colors"
-                                    >
-                                      Tandai Selesai ✓
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      disabled={hasCheckedInToday}
-                                      onClick={() => handleOpenCheckinModal(course)}
-                                      className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 ${
-                                        hasCheckedInToday
-                                          ? "bg-gray-300 cursor-not-allowed hover:translate-y-0"
-                                          : "bg-[#025CB8] hover:bg-blue-700"
+                                    <div
+                                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-sm text-white flex-shrink-0 ${
+                                        isDone
+                                          ? "bg-green-500"
+                                          : isActive
+                                          ? "bg-[#025CB8] ring-4 ring-blue-100"
+                                          : "bg-purple-500 ring-4 ring-purple-100"
                                       }`}
                                     >
-                                      {hasCheckedInToday
-                                        ? "Sudah check-in ✓"
-                                        : "Check-in Progress"}
-                                      {!hasCheckedInToday && <ArrowRight size={12} />}
-                                    </button>
+                                      {isDone ? (
+                                        <CheckCircle2 size={18} />
+                                      ) : (
+                                        <span className="text-sm font-black">{idx + 1}</span>
+                                      )}
+                                    </div>
                                   </div>
-                                )}
+
+                                  <div className={`flex-1 border rounded-2xl p-4 sm:p-5 hover:shadow-md transition-shadow ${cardClass}`}>
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+                                            {isDone ? "✓ Selesai" : isActive ? "Sedang Berjalan" : "Rekomendasi AI"}
+                                          </span>
+                                          {isActive && hasCheckedInToday && (
+                                            <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-md">
+                                              Check-in Hari Ini ✓
+                                            </span>
+                                          )}
+                                        </div>
+                                        <h3 className="font-bold text-sm text-gray-800 leading-snug line-clamp-2" title={item.title || item.courseName}>
+                                          {courseUrl ? (
+                                            <a href={courseUrl} target="_blank" rel="noreferrer" className="hover:text-[#025CB8] hover:underline transition-colors">
+                                              {item.title || item.courseName}
+                                            </a>
+                                          ) : (
+                                            item.title || item.courseName
+                                          )}
+                                        </h3>
+                                      </div>
+
+                                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+                                          {item.platform}
+                                        </span>
+                                        {item.level && (
+                                          <span className="text-[9px] font-bold text-[#025CB8] bg-blue-50 border border-blue-100 px-1.5 py-1 rounded-md uppercase tracking-wider">
+                                            {item.level}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {item.skills && item.skills.length > 0 && (
+                                      <div className="mb-3 flex flex-wrap gap-1.5">
+                                        {item.skills.slice(0, 3).map((skill: string) => (
+                                          <span key={skill} className="bg-gray-100 text-gray-600 border border-gray-200/50 rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                                            {skill}
+                                          </span>
+                                        ))}
+                                        {item.skills.length > 3 && (
+                                          <span className="bg-gray-50 text-gray-400 border border-gray-200/30 rounded-lg px-2 py-0.5 text-[9px] font-bold">
+                                            +{item.skills.length - 3} lagi
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {!isEnrolled && item.reason && (
+                                      <p className="text-xs text-purple-600 font-medium bg-purple-50/50 border border-purple-100 rounded-xl p-2.5 mb-4 italic">
+                                        ✨ AI: {item.reason}
+                                      </p>
+                                    )}
+
+                                    {isActive && course && (
+                                      <div className="mb-3">
+                                        <div className="flex justify-between text-xs font-bold mb-1.5">
+                                          <span className="text-gray-500">Progress Belajar</span>
+                                          <span style={{ color: accent }}>{course.progress}%</span>
+                                        </div>
+                                        <ProgressLine percentage={course.progress} accent={accent} />
+                                        <p className="mt-1 flex items-center gap-1 text-[10px] text-gray-400">
+                                          <Clock size={9} />
+                                          {hasCheckedInToday ? `Check-in hari ini · ${course.progress}% selesai` : `Progress terkini · ${course.progress}% selesai`}
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {isDone && (
+                                      <div className="mb-3 flex items-center gap-2 bg-green-50 rounded-xl p-2.5 text-xs font-semibold text-green-700">
+                                        <Trophy size={14} />
+                                        <span>🎉 Selesai dalam {Number(totalHoursSpent.toFixed(1))} jam belajar</span>
+                                      </div>
+                                    )}
+
+                                    {isActive && course && (
+                                      <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 mt-1 flex-wrap">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenCompleteModal(course)}
+                                          className="px-3 py-2 text-xs font-bold text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 rounded-xl transition-colors"
+                                        >
+                                          Tandai Selesai ✓
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          disabled={hasCheckedInToday}
+                                          onClick={() => handleOpenCheckinModal(course)}
+                                          className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 ${
+                                            hasCheckedInToday ? "bg-gray-300 cursor-not-allowed hover:translate-y-0" : "hover:opacity-90"
+                                          }`}
+                                          style={hasCheckedInToday ? undefined : { background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                                        >
+                                          {hasCheckedInToday ? "Sudah check-in ✓" : "Check-in Progress"}
+                                          {!hasCheckedInToday && <ArrowRight size={12} />}
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {!isEnrolled && (
+                                      <div className="flex justify-end border-t border-gray-100 pt-3 mt-1">
+                                        <button
+                                          type="button"
+                                          disabled={enrollingId === item.id}
+                                          onClick={() => handleEnroll(item.id)}
+                                          style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                                          className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                          {enrollingId === item.id ? (
+                                            <>
+                                              <Loader2 size={12} className="animate-spin" />
+                                              Mendaftar...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span>Daftar Kursus</span>
+                                              <ArrowRight size={12} />
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* Footer promo for AI roadmap */}
+                            <div className="relative flex gap-4 sm:gap-5 items-stretch">
+                              <div className="relative w-9 sm:w-10 flex-shrink-0 flex flex-col items-center z-10">
+                                <div className="absolute top-0 h-[18px] sm:h-[20px] w-[2px] bg-gray-100 -z-10" />
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-purple-50 text-purple-600 ring-4 ring-purple-100 border border-purple-200 flex-shrink-0">
+                                  <Award size={18} />
+                                </div>
+                              </div>
+
+                              <div className="flex-1 border border-dashed border-purple-200 bg-purple-50/10 rounded-2xl p-4 sm:p-5">
+                                <h3 className="font-bold text-sm text-gray-800 leading-snug">
+                                  Selesaikan Peta Belajarmu! 🏆
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+                                  AI telah menyusun kurikulum di atas untuk membantumu menguasai profesi target: <span className="font-bold text-gray-600">{dreamRole}</span>. Selesaikan semua tahapan ini untuk mencapai kesiapan karir optimal.
+                                </p>
                               </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        )
+                      ) : (
+                        sortedCourseList.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div
+                              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                              style={{ background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)" }}
+                            >
+                              <BookOpen size={28} className="text-[#025CB8] opacity-50" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-500 mb-1">
+                              Belum ada kursus mandiri yang diikuti
+                            </p>
+                            <p className="text-xs text-gray-400 leading-relaxed mb-5 max-w-xs">
+                              Pilih dan daftar kursus satu persatu secara manual dari menu Kursus untuk memulai belajar mandiri.
+                            </p>
+                            <button
+                              onClick={() => setCurrentTab("kursus")}
+                              className="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90"
+                              style={{ background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                            >
+                              Cari &amp; Daftar Kursus →
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-6 relative z-10">
+                            {sortedCourseList.map((course, idx) => {
+                              const isActive = course.status === "active";
+                              const isDone = course.status === "completed";
 
-                        {/* Card promo penambahan kursus baru */}
-                        <div className="relative flex gap-4 sm:gap-5 items-stretch">
-                          {/* Timeline circle wrapper */}
-                          <div className="relative w-9 sm:w-10 flex-shrink-0 flex flex-col items-center z-10">
-                            {/* Segment Line */}
-                            <div className="absolute top-0 h-[18px] sm:h-[20px] w-[2px] bg-gray-100 -z-10" />
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-blue-50 text-[#025CB8] ring-4 ring-blue-100 border border-blue-200 flex-shrink-0">
-                              <Plus size={18} />
+                              const hasCheckedInToday = course.recentCheckins?.some(
+                                (ci) => new Date(ci.date).toDateString() === new Date().toDateString()
+                              );
+
+                              const badgeClass = isDone
+                                ? "bg-green-100 text-green-700"
+                                : "bg-blue-100 text-[#025CB8]";
+
+                              const cardClass = isActive
+                                ? "border-blue-200 bg-blue-50/20"
+                                : isDone
+                                ? "border-green-200 bg-green-50/10"
+                                : "border-gray-100 bg-white";
+
+                              const totalHoursSpent =
+                                course.recentCheckins?.reduce(
+                                  (sum, ci) => sum + (parseFloat(String(ci.hoursSpent)) || 0),
+                                  0
+                                ) || 0;
+
+                              const accent = courseAccents[idx % courseAccents.length];
+
+                              return (
+                                <div key={course.id} className="relative flex gap-4 sm:gap-5 items-stretch">
+                                  <div className="relative w-9 sm:w-10 flex-shrink-0 flex flex-col items-center z-10">
+                                    {idx === 0 ? (
+                                      <div className="absolute top-[18px] sm:top-[20px] bottom-[-24px] w-[2px] bg-gray-100 -z-10" />
+                                    ) : (
+                                      <div className="absolute top-0 bottom-[-24px] w-[2px] bg-gray-100 -z-10" />
+                                    )}
+                                    <div
+                                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-sm text-white flex-shrink-0 ${
+                                        isDone
+                                          ? "bg-green-500"
+                                          : "bg-[#025CB8] ring-4 ring-blue-100"
+                                      }`}
+                                    >
+                                      {isDone ? (
+                                        <CheckCircle2 size={18} />
+                                      ) : (
+                                        <span className="text-sm font-black">{idx + 1}</span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className={`flex-1 border rounded-2xl p-4 sm:p-5 hover:shadow-md transition-shadow ${cardClass}`}>
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
+                                            {isDone ? "✓ Selesai" : "Sedang Berjalan"}
+                                          </span>
+                                          {isActive && hasCheckedInToday && (
+                                            <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-md">
+                                              Check-in Hari Ini ✓
+                                            </span>
+                                          )}
+                                        </div>
+                                        <h3 className="font-bold text-sm text-gray-800 leading-snug line-clamp-2" title={course.courseName}>
+                                          {course.url ? (
+                                            <a href={course.url} target="_blank" rel="noreferrer" className="hover:text-[#025CB8] hover:underline transition-colors">
+                                              {course.courseName}
+                                            </a>
+                                          ) : (
+                                            course.courseName
+                                          )}
+                                        </h3>
+                                      </div>
+
+                                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+                                          {course.platform}
+                                        </span>
+                                        {course.level && (
+                                          <span className="text-[9px] font-bold text-[#025CB8] bg-blue-50 border border-blue-100 px-1.5 py-1 rounded-md uppercase tracking-wider">
+                                            {course.level}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {course.skills && course.skills.length > 0 && (
+                                      <div className="mb-3 flex flex-wrap gap-1.5">
+                                        {course.skills.slice(0, 3).map((skill) => (
+                                          <span key={skill} className="bg-gray-100 text-gray-600 border border-gray-200/50 rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                                            {skill}
+                                          </span>
+                                        ))}
+                                        {course.skills.length > 3 && (
+                                          <span className="bg-gray-50 text-gray-400 border border-gray-200/30 rounded-lg px-2 py-0.5 text-[9px] font-bold">
+                                            +{course.skills.length - 3} lagi
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {isActive && (
+                                      <div className="mb-3">
+                                        <div className="flex justify-between text-xs font-bold mb-1.5">
+                                          <span className="text-gray-500">Progress Belajar</span>
+                                          <span style={{ color: accent }}>{course.progress}%</span>
+                                        </div>
+                                        <ProgressLine percentage={course.progress} accent={accent} />
+                                        <p className="mt-1 flex items-center gap-1 text-[10px] text-gray-400">
+                                          <Clock size={9} />
+                                          {hasCheckedInToday ? `Check-in hari ini · ${course.progress}% selesai` : `Progress terkini · ${course.progress}% selesai`}
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {isDone && (
+                                      <div className="mb-3 flex items-center gap-2 bg-green-50 rounded-xl p-2.5 text-xs font-semibold text-green-700">
+                                        <Trophy size={14} />
+                                        <span>🎉 Selesai dalam {Number(totalHoursSpent.toFixed(1))} jam belajar</span>
+                                      </div>
+                                    )}
+
+                                    {isActive && (
+                                      <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-3 mt-1 flex-wrap">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenCompleteModal(course)}
+                                          className="px-3 py-2 text-xs font-bold text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 rounded-xl transition-colors"
+                                        >
+                                          Tandai Selesai ✓
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          disabled={hasCheckedInToday}
+                                          onClick={() => handleOpenCheckinModal(course)}
+                                          className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5 ${
+                                            hasCheckedInToday ? "bg-gray-300 cursor-not-allowed hover:translate-y-0" : "hover:opacity-90"
+                                          }`}
+                                          style={hasCheckedInToday ? undefined : { background: "linear-gradient(135deg, #025CB8, #62AAEA)" }}
+                                        >
+                                          {hasCheckedInToday ? "Sudah check-in ✓" : "Check-in Progress"}
+                                          {!hasCheckedInToday && <ArrowRight size={12} />}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* Card promo penambahan kursus baru mandiri */}
+                            <div className="relative flex gap-4 sm:gap-5 items-stretch">
+                              <div className="relative w-9 sm:w-10 flex-shrink-0 flex flex-col items-center z-10">
+                                <div className="absolute top-0 h-[18px] sm:h-[20px] w-[2px] bg-gray-100 -z-10" />
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-blue-50 text-[#025CB8] ring-4 ring-blue-100 border border-blue-200 flex-shrink-0">
+                                  <Plus size={18} />
+                                </div>
+                              </div>
+
+                              <div className="flex-1 border border-dashed border-blue-200 bg-blue-50/10 rounded-2xl p-4 sm:p-5 hover:shadow-md transition-shadow flex flex-col justify-between">
+                                <div>
+                                  <h3 className="font-bold text-sm text-gray-800 leading-snug">
+                                    Tingkatkan Skill Karirmu Mandiri 🚀
+                                  </h3>
+                                  <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+                                    Ingin menguasai skill tambahan untuk mempercepat kesiapan kerjamu? 
+                                    Temukan rekomendasi kursus AI terbaik yang sesuai dengan target karirmu.
+                                  </p>
+                                </div>
+                                <div className="mt-4 flex justify-start">
+                                  <button
+                                    onClick={() => setCurrentTab("kursus")}
+                                    className="px-4 py-2 bg-[#025CB8] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                                  >
+                                    <span>Tambah Kursus Baru</span>
+                                    <ArrowRight size={12} />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
-
-                          {/* Card */}
-                          <div className="flex-1 border border-dashed border-blue-200 bg-blue-50/10 rounded-2xl p-4 sm:p-5 hover:shadow-md transition-shadow flex flex-col justify-between">
-                            <div>
-                              <h3 className="font-bold text-sm text-gray-800 leading-snug">
-                                Tingkatkan Skill Karirmu 🚀
-                              </h3>
-                              <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                                Ingin menguasai skill tambahan untuk mempercepat kesiapan kerjamu? 
-                                Temukan rekomendasi kursus AI terbaik yang sesuai dengan target karirmu.
-                              </p>
-                            </div>
-                            <div className="mt-4 flex justify-start">
-                              <button
-                                onClick={() => setCurrentTab("kursus")}
-                                className="px-4 py-2 bg-[#025CB8] hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-                              >
-                                <span>Tambah Kursus Baru</span>
-                                <ArrowRight size={12} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        )
+                      )}
                     </>
                   )}
                 </div>
@@ -1136,7 +1414,18 @@ const RoadmapKarir = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
                             <h3 className="text-sm font-bold text-gray-800 line-clamp-1">
-                              {course.courseName}
+                              {course.url ? (
+                                <a
+                                  href={course.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="hover:text-[#025CB8] hover:underline transition-colors"
+                                >
+                                  {course.courseName}
+                                </a>
+                              ) : (
+                                course.courseName
+                              )}
                             </h3>
                             <span
                               className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-md ${

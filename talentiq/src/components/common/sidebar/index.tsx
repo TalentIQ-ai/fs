@@ -3,12 +3,14 @@ import {
   BookOpen,
   Briefcase,
   ChevronLeft,
+  Home,
   LayoutDashboard,
   LogOut,
   Map,
   Menu,
   User,
 } from "lucide-react";
+
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { getProfileService, UserWithProfile } from "@/services/profile.service";
@@ -34,6 +36,11 @@ const mockUser = {
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 const navItems: NavItem[] = [
+  {
+    label: "Beranda",
+    path: "/",
+    icon: <Home size={20} />,
+  },
   {
     label: "Dashboard",
     path: "/dashboard",

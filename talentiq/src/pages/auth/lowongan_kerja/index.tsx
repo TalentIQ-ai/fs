@@ -1,10 +1,11 @@
 import {
+  ArrowRight,
   Bookmark,
+  BookOpen,
   Briefcase,
   Building2,
   ChevronDown,
-  Filter,
-  GraduationCap,
+  ExternalLink,
   MapPin,
   Search,
   Sparkles,
@@ -146,7 +147,7 @@ const JobCard = ({
         )}
       </div>
 
-      <div className="flex items-center gap-3 mt-6 relative z-10">
+      <div className="flex items-center gap-2 mt-6 relative z-10">
         <button
           onClick={() => {
             if (isFutureRole) {
@@ -159,16 +160,24 @@ const JobCard = ({
               }
             }
           }}
-          className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95
-            ${isFutureRole
-              ? "bg-white border-2 border-orange-500 text-orange-600 hover:bg-orange-50"
-              : "bg-[#025CB8] text-white hover:bg-blue-700 shadow-md"
-            }
-          `}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 text-white shadow-md hover:shadow-lg hover:opacity-90"
+          style={{
+            background: isFutureRole
+              ? "linear-gradient(135deg, #7C3AED, #6D28D9)"
+              : "linear-gradient(135deg, #025CB8, #62AAEA)",
+          }}
         >
-          {isFutureRole
-            ? "Lihat Kursus yang Dibutuhkan"
-            : "Lamar Sekarang"}
+          {isFutureRole ? (
+            <>
+              <BookOpen size={15} />
+              Lihat Kursus
+            </>
+          ) : (
+            <>
+              <ArrowRight size={15} />
+              Lamar Sekarang
+            </>
+          )}
         </button>
 
         {isFutureRole && vacancy.url && (
@@ -176,19 +185,15 @@ const JobCard = ({
             onClick={() => {
               window.open(vacancy.url, "_blank", "noopener,noreferrer");
             }}
-            className="px-4 py-2.5 rounded-xl border-2 border-orange-500 text-orange-600 hover:bg-orange-50 text-sm font-bold transition-colors active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border-2 border-[#025CB8]/30 text-[#025CB8] hover:bg-blue-50 hover:border-[#025CB8] text-xs font-bold transition-all active:scale-95"
           >
-            Lihat Lowongan
+            <ExternalLink size={14} />
+            Lihat
           </button>
         )}
 
         <button
-          className={`p-2.5 rounded-xl border-2 transition-colors
-            ${isFutureRole
-              ? "border-gray-200 text-gray-400 hover:text-gray-600"
-              : "border-gray-200 text-gray-500 hover:text-gray-700"
-            }
-          `}
+          className="p-2.5 rounded-xl border-2 border-gray-200 text-gray-400 hover:text-[#025CB8] hover:border-blue-200 hover:bg-blue-50 transition-all"
         >
           <Bookmark size={18} />
         </button>

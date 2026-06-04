@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard } from "lucide-react";
 
 import logoHeader from "@/assets/logoheader.png";
 import StarBorder from "@/components/StarBorder";
@@ -17,6 +18,12 @@ const HeaderComponent = () => {
 
   const [mobileMenuShown, setMobileMenuShown] = useState(false);
   const [headerCompact, setHeaderCompact] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Cek token setiap kali halaman berubah
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("token"));
+  }, [currentRoute.pathname]);
 
   useEffect(() => {
     const syncHeaderState = () => {
@@ -42,7 +49,8 @@ const HeaderComponent = () => {
     [headerCompact]
   );
 
-  const goToLogin = () => redirect("/login");
+  const goToLogin     = () => redirect("/login");
+  const goToDashboard = () => redirect("/dashboard");
 
   return (
     <>
@@ -125,36 +133,69 @@ const HeaderComponent = () => {
 
               {/* kanan desktop */}
               <div className="hidden md:flex items-center gap-3">
-
-                <button
-                  onClick={goToLogin}
-                  className="
-                    rounded-xl
-                    bg-gradient-to-r
-                    from-[#025CB8]
-                    to-[#62AAEA]
-                    text-white
-                    font-bold
-                    shadow-lg
-                    transition-all duration-300
-                    hover:-translate-y-0.5
-                    hover:shadow-2xl
-                    hover:from-[#0147A0]
-                    hover:to-[#025CB8]
-                  "
-                >
-                  <span
-                    className={`
-                      block
-                      ${headerCompact
-                        ? "px-4 py-2 text-sm"
-                        : "px-5 py-2.5 text-sm"
-                      }
-                    `}
+                {isLoggedIn ? (
+                  <button
+                    onClick={goToDashboard}
+                    className="
+                      flex items-center gap-2
+                      rounded-xl
+                      bg-gradient-to-r
+                      from-[#025CB8]
+                      to-[#62AAEA]
+                      text-white
+                      font-bold
+                      shadow-lg
+                      transition-all duration-300
+                      hover:-translate-y-0.5
+                      hover:shadow-2xl
+                      hover:from-[#0147A0]
+                      hover:to-[#025CB8]
+                    "
                   >
-                    Akun
-                  </span>
-                </button>
+                    <span
+                      className={`
+                        flex items-center gap-2
+                        ${headerCompact
+                          ? "px-4 py-2 text-sm"
+                          : "px-5 py-2.5 text-sm"
+                        }
+                      `}
+                    >
+                      <LayoutDashboard size={15} />
+                      Dashboard
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={goToLogin}
+                    className="
+                      rounded-xl
+                      bg-gradient-to-r
+                      from-[#025CB8]
+                      to-[#62AAEA]
+                      text-white
+                      font-bold
+                      shadow-lg
+                      transition-all duration-300
+                      hover:-translate-y-0.5
+                      hover:shadow-2xl
+                      hover:from-[#0147A0]
+                      hover:to-[#025CB8]
+                    "
+                  >
+                    <span
+                      className={`
+                        block
+                        ${headerCompact
+                          ? "px-4 py-2 text-sm"
+                          : "px-5 py-2.5 text-sm"
+                        }
+                      `}
+                    >
+                      Akun
+                    </span>
+                  </button>
+                )}
               </div>
 
               {/* trigger mobile */}
@@ -246,23 +287,44 @@ const HeaderComponent = () => {
 
             <div className="my-2 h-px bg-gray-100" />
 
-            <button
-              onClick={goToLogin}
-              className="
-                flex items-center justify-center
-                rounded-xl py-3
-                font-bold text-white
-                bg-gradient-to-r
-                from-[#025CB8]
-                to-[#62AAEA]
-                transition-all duration-300
-                shadow-md
-                hover:from-[#0147A0]
-                hover:to-[#025CB8]
-              "
-            >
-              Masuk ke Akun
-            </button>
+            {isLoggedIn ? (
+              <button
+                onClick={goToDashboard}
+                className="
+                  flex items-center justify-center gap-2
+                  rounded-xl py-3
+                  font-bold text-white
+                  bg-gradient-to-r
+                  from-[#025CB8]
+                  to-[#62AAEA]
+                  transition-all duration-300
+                  shadow-md
+                  hover:from-[#0147A0]
+                  hover:to-[#025CB8]
+                "
+              >
+                <LayoutDashboard size={16} />
+                Dashboard
+              </button>
+            ) : (
+              <button
+                onClick={goToLogin}
+                className="
+                  flex items-center justify-center
+                  rounded-xl py-3
+                  font-bold text-white
+                  bg-gradient-to-r
+                  from-[#025CB8]
+                  to-[#62AAEA]
+                  transition-all duration-300
+                  shadow-md
+                  hover:from-[#0147A0]
+                  hover:to-[#025CB8]
+                "
+              >
+                Masuk ke Akun
+              </button>
+            )}
           </div>
         </div>
       </div>

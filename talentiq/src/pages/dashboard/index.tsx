@@ -30,7 +30,7 @@ import { enrollCourseService, getRecommendationsService, getMyCoursesService, Us
 
 
 // progress circle
-const ScoreCircle = ({ score, status }: { score: number; status: string }) => {
+const ScoreCircle = ({ score }: { score: number }) => {
   const size = 58;
   const line = 2 * Math.PI * size;
   const stroke = line - (score / 100) * line;
@@ -88,7 +88,7 @@ const ScoreCircle = ({ score, status }: { score: number; status: string }) => {
         </span>
 
         <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-          {status}
+          Kesiapan
         </span>
       </div>
     </div>
@@ -747,7 +747,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <>
-                    <ScoreCircle score={jobReadyScore} status={readinessStatus} />
+                    <ScoreCircle score={jobReadyScore} />
 
                     <p className="mt-4 text-center text-sm font-semibold text-[#025CB8]">
                       {readinessStatus}
